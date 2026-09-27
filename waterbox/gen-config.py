@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""Writes the three declarations a package carries - waterbox.config,
+file_slots.json and default_keybinds.json - from the one description below.
+The panel here must be the panel wbx-entry.cpp binds (the gate checks the two
+agree), and nothing is hand-edited in the generated files.
+
+Usage: gen-config.py [OUTDIR]   (default: this script's folder)
+"""
+import json
+import os
+import sys
+
+out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
+
+BUTTONS = ["A", "B", "X", "Y", "Up", "Down", "Left", "Right", "L", "R", "Start", "Select",
+           "ZL", "ZR", "Touch"]
+
+AXES = [
+    ("Circle Pad X", -128, 127, 0),
+    ("Circle Pad Y", -128, 127, 0),
+    ("C-Stick X", -128, 127, 0),
+    ("C-Stick Y", -128, 127, 0),
+    ("Touch X", 0, 65535, 32768),
+    ("Touch Y", 0, 65535, 32768),
+    ("Accel X", -4000, 4000, 0),
+    ("Accel Y", -4000, 4000, 0),
+    ("Accel Z", -4000, 4000, -1000),
+    ("Gyro X", -20000, 20000, 0),
+    ("Gyro Y", -20000, 20000, 0),
+    ("Gyro Z", -20000, 20000, 0),
+]
+
+INPUT_NAME = "Nintendo 3DS"
+
+GAME_FORMATS = ["3ds", "cci", "cxi", "app", "3dsx", "elf"]
+
+config = {
+    "coreName": "Azahar",
+    "systemId": "3DS",
+    "author": "The Citra and Azahar teams; chimera port by Sergio Martin",
+    "url": "https://github.com/ToolAssisted-run/chimera-core-azahar",
+    "romFile": "game",
+    "deterministic": True,
+    "memoryLayoutMiB": [256, 16, 16, 256, 3072],
+    "_memoryLayoutMiB_note": "sbrk, sealed, invisible, plain, mmap. The console's 256 MB of FCRAM (a New 3DS's; an old one uses the first 128), VRAM and the DSP's RAM are Azahar's own allocations, so they land on the mmap heap together with the JIT's code caches and the machine's own filesystem - the NAND, the SD card and every save, which live in guest memory so a savestate carries them. The game itself is never copied in: it is read from its mounted file.",
+    "video": {
+        "_comment": "The two screens stacked, the way the console is held: the 400x240 top screen above the 320x240 bottom one, centred. A top screen in the 800-pixel wide mode some 2D games use is shown at 400, each pair of its pixels averaged.",
+        "width": 400,
+        "height": 480,
+        "virtualWidth": 400,
+        "virtualHeight": 480,
+        "vsyncNumerator": 268111856,
+        "vsyncDenominator": 4481136,
+    },
+    "audio": {
+        "_comment": "The DSP's own output, 32728 Hz stereo, handed over as it makes it: about 547 pairs a frame, in 160-pair blocks, so a frame carries 480 or 640.",
+        "rate": 32728,
+        "samplesPerFrame": 2048,
+        "channels": 2,
+        "get": "GetAudio",
+    },
+    "lag": {"inputWasRead": "InputWasRead"},
+    "extensions": {"." + f: "3DS" for f in GAME_FORMATS},
+    "input": {
+        "name": INPUT_NAME,
+        "_comment": "The console's controls. The ZL and ZR buttons and the C-Stick are a New 3DS's and leave the input roll on an old one. The Circle Pad and C-Stick run -128..127 with up and right positive. The touch screen is the Touch button plus a point on the WHOLE stacked picture (Touch X/Y, 0..65535 across its 400 columns and down its 480 rows, as every absolute position in Chimera is): a point on the bottom screen touches it, anywhere else touches nothing. The accelerometer (thousandths of a g, resting at -1000 on Z) and gyroscope (tenths of a degree a second) take input only when the Motion setting is on.",
+        "buttons": BUTTONS,
+        "axes": [{"name": n, "min": lo, "max": hi, "neutral": mid} for n, lo, hi, mid in AXES],
+    },
+    "settings": [
+        {
+            "name": "model",
+            "display": "Model",
+            "type": "enum",
+            "options": ["new3ds", "old3ds"],
+            "default": "new3ds",
+            "description": "Which console: a New Nintendo 3DS (256 MB, a faster CPU mode, the ZL and ZR buttons and the C-Stick) or the original Nintendo 3DS. Azahar's default is the New 3DS, which runs every game; a game made for the old one may time itself differently on the new. Part of the machine: a movie needs the same model.",
+        },
+        {
+            "name": "region",
+            "display": "Region",
+            "type": "enum",
+            "options": ["auto", "jpn", "usa", "eur", "aus", "chn", "kor", "twn"],
+            "default": "auto",
+            "description": "The console's region. 'auto' takes the game's own. Part of the machine: a game reads it.",
+        },
+        {
+            "name": "rtc_start",
+            "display": "Clock at Power-On",
+            "type": "int",
+            "default": 946684800,
+            "min": 946684800,
+            "max": 2145916800,
+            "description": "What the console's clock reads when the machine starts, in seconds since 1970-01-01 UTC. The default is 2000-01-01 00:00:00 - the earliest a 3DS can be set to. The clock then runs with the machine, never with the host. A game that seeds its randomness or its calendar from the clock plays differently for a different value, so it is part of the machine.",
+        },
+        {
+            "name": "cpu",
+            "display": "CPU",
+            "type": "enum",
+            "options": ["jit", "interpreter"],
+            "default": "jit",
+            "description": "How the ARM11 is emulated: dynarmic's recompiler (fast) or Azahar's interpreter. Both are meant to compute the same machine; the interpreter is there to tell a recompiler bug from a game's.",
+        },
+        {
+            "name": "cpu_clock",
+            "display": "CPU Clock (%)",
+            "type": "int",
+            "default": 100,
+            "min": 5,
+            "max": 400,
+            "description": "The ARM11's clock as a percentage of the console's own (Azahar's CPU clock setting). Above 100 a game that slows down slows down less. It changes what the machine computes, so a movie needs the same value.",
+        },
+        {
+            "name": "motion",
+            "display": "Motion Controls",
+            "type": "bool",
+            "default": False,
+            "description": "Whether the accelerometer and gyroscope take input (the six Accel and Gyro axes). Off, the console lies still and flat, and those axes leave the input roll.",
+        },
+        {
+            "name": "aes_keys",
+            "display": "AES Keys",
+            "type": "bool",
+            "default": False,
+            "description": "Whether the project carries the console's AES keys (aes_keys.txt, dumped from your own console). A decrypted game needs none, and this package ships none. They are what installing and running .cia content, amiibo and some online-account features need.",
+        },
+        {
+            "name": "seeddb",
+            "display": "Seed Database",
+            "type": "bool",
+            "default": False,
+            "description": "Whether the project carries seeddb.bin, the per-title seeds some eShop titles are encrypted with. Only with AES Keys.",
+        },
+    ],
+    "firmware": [
+        {
+            "id": "aes_keys.txt",
+            "display": "AES keys (aes_keys.txt)",
+            "description": "The console's AES keys in Azahar's text format, dumped from your own console. Azahar looks for them in its sysdata folder; the machine finds them there.",
+            "name": "aes_keys.txt",
+            "requiredWhen": {"setting": "aes_keys", "is": True},
+        },
+        {
+            "id": "seeddb.bin",
+            "display": "Seed database (seeddb.bin)",
+            "description": "The title seeds some eShop titles are encrypted with.",
+            "name": "seeddb.bin",
+            "requiredWhen": {"setting": "seeddb", "is": True},
+        },
+    ],
+}
+
+slots = {
+    "_comment": "A 3DS project is one decrypted game, and whatever it already saved.",
+    "slots": [
+        {
+            "id": "game",
+            "title": "Game",
+            "min": 1,
+            "max": 1,
+            "formats": GAME_FORMATS,
+            "help": "A DECRYPTED dump: a cartridge (.3ds/.cci), an executable content (.cxi/.app), or homebrew (.3dsx/.elf). Azahar does not decrypt; an encrypted dump is a load error that says so. An old dump whose header still says 'encrypted' after it was decrypted is recognised and runs.",
+        },
+        {
+            "id": "savedata",
+            "title": "Save data",
+            "min": 0,
+            "max": 1,
+            "formats": ["zip"],
+            "help": "What the game already saved, as Emulator > Export Save Data... wrote it: a .zip of the SD card's Nintendo 3DS folder (the game's save archive and extra data). It goes back onto the machine's SD card before the game starts.",
+        },
+    ],
+}
+
+pad = {
+    "A": "X, J1 B2, X1 B",
+    "B": "Z, J1 B1, X1 A",
+    "X": "S, J1 B4, X1 Y",
+    "Y": "A, J1 B3, X1 X",
+    "Up": "Up, J1 POV1U, X1 DpadUp",
+    "Down": "Down, J1 POV1D, X1 DpadDown",
+    "Left": "Left, J1 POV1L, X1 DpadLeft",
+    "Right": "Right, J1 POV1R, X1 DpadRight",
+    "L": "Q, J1 B5, X1 LeftShoulder",
+    "R": "W, J1 B6, X1 RightShoulder",
+    "Start": "Enter, J1 B10, X1 Start",
+    "Select": "Backspace, J1 B9, X1 Back",
+    "ZL": "E, J1 B7, X1 LeftTrigger",
+    "ZR": "R, J1 B8, X1 RightTrigger",
+    "Touch": "WMouse L",
+}
+analog = {
+    "Circle Pad X": {"Value": "X1 LeftThumbX Axis", "Mult": 1.0, "Deadzone": 0.1},
+    "Circle Pad Y": {"Value": "X1 LeftThumbY Axis", "Mult": 1.0, "Deadzone": 0.1},
+    "C-Stick X": {"Value": "X1 RightThumbX Axis", "Mult": 1.0, "Deadzone": 0.1},
+    "C-Stick Y": {"Value": "X1 RightThumbY Axis", "Mult": 1.0, "Deadzone": 0.1},
+    "Touch X": {"Value": "WMouse X", "Mult": 1.0, "Deadzone": 0.0},
+    "Touch Y": {"Value": "WMouse Y", "Mult": 1.0, "Deadzone": 0.0},
+}
+keybinds = {
+    "_comment": [
+        "The console on the keyboard and the first pad: the face buttons where a 3DS has them",
+        "(A right, B bottom), the D-pad on the arrows, the Circle Pad and C-Stick on the pad's",
+        "sticks, and the touch screen under the mouse: its left button touches, where the",
+        "pointer is on the picture. Motion is left unbound.",
+    ],
+    "AllTrollers": {INPUT_NAME: pad},
+    "AllTrollersAutoFire": {INPUT_NAME: {}},
+    "AllTrollersAnalog": {INPUT_NAME: analog},
+}
+
+for name, obj in (("waterbox.config", config), ("file_slots.json", slots),
+                  ("default_keybinds.json", keybinds)):
+    with open(os.path.join(out, name), "w") as f:
+        json.dump(obj, f, indent=2)
+        f.write("\n")
