@@ -18,7 +18,7 @@ behind it (2026-09-27) recommended going ahead on four conditions, all kept:
 | 0 | Azahar's libraries build as a miniBox guest; a native twin from the same CMake | done |
 | 1 | the driver: boot, frames, the machine's own filesystem, pinned settings, native == sandbox | done |
 | 2 | commercial games, the keys slot, save data in and out, touch, motion, lag | done (motion unproven on a game) |
-| - | the software-renderer gate | done: waterbox/run-gate.sh |
+| - | the software-renderer gate | done: waterbox/run-gate.sh, 50 passed / 0 failed with the four test games; 3 passed / 8 skipped with none |
 | 3 | the GPU bridge (OpenGL through Chimera's bridge) | NOT STARTED |
 | 4 | CI, the roster, a release | not started (needs the user) |
 
@@ -72,7 +72,20 @@ with `fopencookie`, so FileUtil's own code is unchanged.
 | software rasterizer workers | patch 0011: scanlines in order on the machine's thread |
 | HOST_TICK | patch 0009: the machine's clock |
 | LLE applets from NAND | HLE applets |
+| an IPC reply's unwritten bytes (a pushed u8 or bool) came from the host heap | patch 0013: the command buffer is zeroed |
 | audio stretching / FIFO | patch 0006: the null sink takes frames as the DSP makes them |
+
+## The gate
+
+`waterbox/run-gate.sh` (`-q` skips the rebuild). The machine legs run on
+decrypted dumps in `tests/roms-local`: `darkwitch.cci` (Legend of Dark
+Witch), `drancia.cci` (Drancia Saga), `mlss.3ds` (Mario & Luigi Superstar
+Saga + Bowser's Minions, the 800-wide top screen) and `cars2.3ds` (Cars 2,
+the dump still marked encrypted). Every comparison has a control that can
+fail: an idle run for the input legs, the top screen for touch, the default
+spelled out for the clock, a scrambled ExeFS for the encryption check, and
+MALLOC_PERTURB_ for the host heap (that leg found patch 0013). About 22
+minutes on this machine; the sandbox runs about half native speed.
 
 ## Lag
 
