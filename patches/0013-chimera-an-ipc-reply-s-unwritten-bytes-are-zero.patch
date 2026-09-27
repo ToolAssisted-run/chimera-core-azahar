@@ -1,0 +1,20 @@
+diff --git a/src/core/hle/kernel/hle_ipc.h b/src/core/hle/kernel/hle_ipc.h
+index 790a05f..e4ea9b0 100644
+--- a/src/core/hle/kernel/hle_ipc.h
++++ b/src/core/hle/kernel/hle_ipc.h
+@@ -428,7 +428,15 @@ public:
+ 
+ private:
+     KernelSystem& kernel;
++#ifdef CHIMERA_CORE
++    // chimera: zeroed. A reply that pushes a u8 or a bool (DSP's
++    // GetHeadphoneStatus, among others) writes one byte of its word, and the
++    // other three went back into the guest's command buffer from whatever the
++    // host heap held there - different run to run, and between two builds.
++    std::array<u32, IPC::COMMAND_BUFFER_LENGTH> cmd_buf{};
++#else
+     std::array<u32, IPC::COMMAND_BUFFER_LENGTH> cmd_buf;
++#endif
+     std::shared_ptr<ServerSession> session;
+     std::shared_ptr<Thread> thread;
+     // TODO(yuriks): Check common usage of this and optimize size accordingly

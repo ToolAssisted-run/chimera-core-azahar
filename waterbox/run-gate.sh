@@ -166,6 +166,7 @@ for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 	"$native" "$w" --frames 600 --report 30 --exercise > "$work/$name.n" 2>"$work/$name.ne" &
 	"$native" "$w" --frames 600 --report 30 --exercise > "$work/$name.n2" 2>/dev/null &
 	"$native" "$w" --frames 600 --report 30 > "$work/$name.ni" 2>/dev/null &
+	MALLOC_PERTURB_=85 "$native" "$w" --frames 600 --report 30 --exercise > "$work/$name.nh" 2>/dev/null &
 	"$wbxrun" "$core" "$w" --frames 600 --report 30 --exercise > "$work/$name.w" 2>"$work/$name.we" &
 	wait
 	pics="$(stream "$work/$name.n" | awk '{print $7}' | sort -u | wc -l)"
@@ -178,6 +179,16 @@ for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 		report PASS "$name: native is deterministic (600 frames)"
 	else
 		report FAIL "$name: native is deterministic (600 frames)"
+	fi
+	# the machine never reads the host's heap: glibc fills every fresh block
+	# with a pattern under MALLOC_PERTURB_, and an emulator that copies an
+	# uninitialised host byte into the guest digests differently (patch 0013
+	# was found this way: Cars 2 differed from frame 27)
+	if [ -s "$work/$name.nh" ] && cmp -s "$work/$name.n" "$work/$name.nh"; then
+		report PASS "$name: nothing the host's heap held reaches the machine"
+	else
+		report FAIL "$name: nothing the host's heap held reaches the machine" \
+			"first difference: $(diff "$work/$name.n" "$work/$name.nh" 2>&1 | awk 'NR==2' | cut -c1-60)"
 	fi
 	if [ -s "$work/$name.n" ] && cmp -s "$work/$name.n" "$work/$name.w"; then
 		report PASS "$name: native == sandbox (600 frames, exercised)"
