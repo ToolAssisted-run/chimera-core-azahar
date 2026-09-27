@@ -1,0 +1,6 @@
+/build/
+/tests/roms-local/
+/waterbox/bin/
+/waterbox/obj-native/
+/waterbox/obj-guest/
+minibox-diag.log

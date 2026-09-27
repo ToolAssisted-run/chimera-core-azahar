@@ -1,0 +1,52 @@
+diff --git a/src/common/logging/backend.h b/src/common/logging/backend.h
+index 550a939..5abd651 100644
+--- a/src/common/logging/backend.h
++++ b/src/common/logging/backend.h
+@@ -27,6 +27,15 @@ void Stop();
+ 
+ void DisableLoggingInTests();
+ 
++#ifdef CHIMERA_CORE
++/// chimera: no backend thread and no log file - a Chimera machine is a
++/// deterministic machine in a sandbox, and upstream's backend is a host thread
++/// writing into the user folder. Messages at or above `level` go straight to
++/// stderr on the thread that logs them; below it they are dropped. Without a
++/// call only Critical ones print, as upstream does before initialization.
++void SetDirectLevel(Level level);
++#endif
++
+ /**
+  * The global filter will prevent any messages from even being processed if they are filtered.
+  */
+diff --git a/src/common/logging/backend.cpp b/src/common/logging/backend.cpp
+index 92095fe..e51c687 100644
+--- a/src/common/logging/backend.cpp
++++ b/src/common/logging/backend.cpp
+@@ -583,6 +583,15 @@ void DisableLoggingInTests() {
+     initialization_in_progress_suppress_logging = true;
+ }
+ 
++#ifdef CHIMERA_CORE
++static Level direct_level = Level::Critical;
++
++void SetDirectLevel(Level level) {
++    direct_level = level;
++    initialization_in_progress_suppress_logging = false;
++}
++#endif
++
+ void SetGlobalFilter(const Filter& filter) {
+     Impl::Instance().SetGlobalFilter(filter);
+ }
+@@ -609,6 +618,11 @@ void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename,
+         Impl::Instance().PushEntry(log_class, log_level, filename, line_num, function,
+                                    fmt::vformat(format, args));
+     } else {
++#ifdef CHIMERA_CORE
++        if (log_level < direct_level) {
++            return;
++        }
++#endif
+         // In the rare case that logging occurs before initialization, write the
+         // message to stderr to preserve useful debug information.
+         Entry new_entry = Impl::CreateEntry(log_class, log_level, filename, line_num, function,

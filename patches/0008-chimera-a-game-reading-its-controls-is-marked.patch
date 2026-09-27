@@ -1,0 +1,82 @@
+diff --git a/src/core/hle/kernel/shared_memory.cpp b/src/core/hle/kernel/shared_memory.cpp
+index 67f93be..931842c 100644
+--- a/src/core/hle/kernel/shared_memory.cpp
++++ b/src/core/hle/kernel/shared_memory.cpp
+@@ -192,12 +192,34 @@ Result SharedMemory::Map(Process& target_process, VAddr address, MemoryPermissio
+         interval_target += interval.second;
+     }
+ 
++#ifdef CHIMERA_CORE
++    // chimera: a frame in which the game never looks at its controls is a lag
++    // frame. A game reads the pad, the touch panel, the motion sensors and the
++    // New 3DS's C-stick straight out of these two blocks - no service call says
++    // so - so their pages go through the memory system's watchpoint path, and a
++    // read of them is what counts (see Chimera_InputRead in memory.cpp).
++    if (IsChimeraInputBlock()) {
++        kernel.memory.RegisterWatchpoint(target_process, target_address, size);
++    }
++#endif
++
+     return ResultSuccess;
+ }
+ 
++#ifdef CHIMERA_CORE
++bool SharedMemory::IsChimeraInputBlock() const {
++    return name == "HID:SharedMemory" || name == "IRRST:SharedMemory";
++}
++#endif
++
+ Result SharedMemory::Unmap(Process& target_process, VAddr address) {
+     // TODO(Subv): Verify what happens if the application tries to unmap an address that is not
+     // mapped to a SharedMemory.
++#ifdef CHIMERA_CORE
++    if (IsChimeraInputBlock()) {
++        kernel.memory.UnregisterWatchpoint(target_process, address, size);
++    }
++#endif
+     return target_process.vm_manager.UnmapRange(address, size);
+ }
+ 
+diff --git a/src/core/memory.cpp b/src/core/memory.cpp
+index b5eb9b8..50e1316 100644
+--- a/src/core/memory.cpp
++++ b/src/core/memory.cpp
+@@ -42,6 +42,12 @@ constexpr u32 SIGTRAP = 5;
+ constexpr u32 SIGSEGV = 11;
+ #endif
+ 
++#ifdef CHIMERA_CORE
++/// chimera: implemented by the core's driver. The game read one of the blocks its
++/// controls live in (see SharedMemory::Map): this frame is not a lag frame.
++void Chimera_InputRead();
++#endif
++
+ namespace Memory {
+ 
+ void PageTable::Clear() {
+@@ -641,6 +647,9 @@ T MemorySystem::Read(const std::shared_ptr<PageTable>& page_table, const VAddr v
+ 
+         ReadType value;
+         std::memcpy(&value, it->second.memory.GetPtr() + (vaddr & CITRA_PAGE_MASK), read_size);
++#ifdef CHIMERA_CORE
++        Chimera_InputRead();
++#endif
+ 
+ #ifdef ENABLE_GDBSTUB
+         if (GDBStub::CheckBreakpoint(vaddr, read_size, GDBStub::BreakpointType::Read)) {
+diff --git a/src/core/hle/kernel/shared_memory.h b/src/core/hle/kernel/shared_memory.h
+index c2ac11a..7c77322 100644
+--- a/src/core/hle/kernel/shared_memory.h
++++ b/src/core/hle/kernel/shared_memory.h
+@@ -51,6 +51,11 @@ public:
+      */
+     static VMAPermission ConvertPermissions(MemoryPermission permission);
+ 
++#ifdef CHIMERA_CORE
++    /// chimera: HID's and IR:RST's blocks, whose reads mark a frame as not lagged
++    bool IsChimeraInputBlock() const;
++#endif
++
+     /**
+      * Maps a shared memory block to an address in the target process' address space
+      * @param target_process Process on which to map the memory block.

@@ -1,0 +1,224 @@
+diff --git a/src/common/chimera_fs.h b/src/common/chimera_fs.h
+new file mode 100644
+index 0000000..46fed32
+--- /dev/null
++++ b/src/common/chimera_fs.h
+@@ -0,0 +1,48 @@
++// Copyright 2026 Chimera
++// Licensed under GPLv2 or any later version
++// Refer to the license.txt file included.
++
++// chimera: the filesystem FileUtil stands on.
++//
++// Upstream keeps the console's NAND, SD card, save data and system data as a
++// folder tree on the host. A Chimera machine has no host folder: it runs in a
++// sandbox whose filesystem is a flat list of files mounted read-only, and
++// everything the console writes has to be part of the machine - in its own
++// memory, where a savestate carries it and a rewind takes it back.
++//
++// So under CHIMERA_CORE, FileUtil's POSIX primitives come here instead. The
++// implementation is the core's (waterbox/chimera-fs.cpp), not Azahar's: an
++// in-memory tree for everything written, and the project's files - the game,
++// aes_keys.txt, ... - served read-only from one host descriptor each.
++
++#pragma once
++
++#ifdef CHIMERA_CORE
++
++#include <cstdio>
++#include <optional>
++#include <string>
++#include <vector>
++#include <sys/stat.h>
++
++namespace ChimeraFS {
++
++/// stat(2): st_mode (S_IFREG or S_IFDIR) and st_size are filled. 0, or -1 and errno.
++int Stat(const std::string& path, struct stat* st);
++/// unlink(2), mkdir(2), rmdir(2), rename(2). 0, or -1 and errno.
++int Unlink(const std::string& path);
++int Mkdir(const std::string& path);
++int Rmdir(const std::string& path);
++int Rename(const std::string& from, const std::string& to);
++/// A directory's entries, sorted; nullopt when it is not a directory.
++std::optional<std::vector<std::string>> List(const std::string& dir);
++/// fopen(3): a stdio stream on the file, or nullptr and errno.
++std::FILE* Open(const std::string& path, const char* mode);
++/// Bytes of an open stream's file at an offset, not moving the stream.
++std::size_t ReadAt(std::FILE* f, void* data, std::size_t size, unsigned long long offset);
++/// ftruncate(2) on an open stream's file. 0, or -1 and errno.
++int Truncate(std::FILE* f, unsigned long long size);
++
++} // namespace ChimeraFS
++
++#endif
+diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
+index 50cee0b..d073f4c 100644
+--- a/src/common/CMakeLists.txt
++++ b/src/common/CMakeLists.txt
+@@ -23,6 +23,7 @@ add_library(citra_common STATIC EXCLUDE_FROM_ALL
+     common_funcs.h
+     common_paths.h
+     common_precompiled_headers.h
++    chimera_fs.h
+     common_types.h
+     construct.h
+     dynamic_library/dynamic_library.cpp
+diff --git a/src/common/file_util.cpp b/src/common/file_util.cpp
+index 3168a26..f69297d 100644
+--- a/src/common/file_util.cpp
++++ b/src/common/file_util.cpp
+@@ -19,6 +19,7 @@
+ #include <fmt/format.h>
+ #include "common/archives.h"
+ #include "common/assert.h"
++#include "common/chimera_fs.h"
+ #include "common/common_funcs.h"
+ #include "common/common_paths.h"
+ #include "common/error.h"
+@@ -113,7 +114,11 @@ typedef struct stat file_stat_t;
+ #else
+ 
+ #define FTELL ftello
++#ifdef CHIMERA_CORE
++#define FOPEN(path, mode) ChimeraFS::Open(path, mode)
++#else
+ #define FOPEN fopen
++#endif
+ #define FCLOSE std::fclose
+ #define FSEEK fseeko
+ #define FREAD std::fread
+@@ -174,6 +179,9 @@ bool Exists(const std::string& filename) {
+     } else {
+         result = AndroidUtils::FileExists(filename) ? 0 : -1;
+     }
++#elif defined(CHIMERA_CORE)
++    struct stat file_info;
++    int result = ChimeraFS::Stat(copy, &file_info);
+ #else
+     struct stat file_info;
+     int result = stat(copy.c_str(), &file_info);
+@@ -202,6 +210,9 @@ bool IsDirectory(const std::string& filename) {
+     } else {
+         return AndroidUtils::IsDirectory(filename);
+     }
++#elif defined(CHIMERA_CORE)
++    struct stat file_info;
++    int result = ChimeraFS::Stat(copy, &file_info);
+ #else
+     struct stat file_info;
+     int result = stat(copy.c_str(), &file_info);
+@@ -271,6 +282,11 @@ bool Delete(const std::string& filepath) {
+             return false;
+         }
+     }
++#elif defined(CHIMERA_CORE)
++    if (ChimeraFS::Unlink(filepath) == -1) {
++        LOG_ERROR(Common_Filesystem, "unlink failed on {}: {}", filepath, GetLastErrorMsg());
++        return false;
++    }
+ #else
+     if (unlink(filepath.c_str()) == -1) {
+         LOG_ERROR(Common_Filesystem, "unlink failed on {}: {}", filepath, GetLastErrorMsg());
+@@ -327,6 +343,16 @@ bool CreateDir(const std::string& path) {
+         return true;
+     }
+ 
++#elif defined(CHIMERA_CORE)
++    if (ChimeraFS::Mkdir(path) == 0)
++        return true;
++
++    if (errno == EEXIST) {
++        return true;
++    }
++
++    LOG_ERROR(Common_Filesystem, "mkdir failed on {}: {}", path, strerror(errno));
++    return false;
+ #else
+     if (mkdir(path.c_str(), 0755) == 0)
+         return true;
+@@ -404,6 +430,9 @@ bool DeleteDir(const std::string& filename) {
+         if (AndroidUtils::DeleteDocument(filename))
+             return true;
+     }
++#elif defined(CHIMERA_CORE)
++    if (ChimeraFS::Rmdir(filename) == 0)
++        return true;
+ #else
+     if (rmdir(filename.c_str()) == 0)
+         return true;
+@@ -431,6 +460,9 @@ bool Rename(const std::string& srcFullPath, const std::string& destFullPath) {
+             return true;
+         }
+     }
++#elif defined(CHIMERA_CORE)
++    if (ChimeraFS::Rename(srcFullPath, destFullPath) == 0)
++        return true;
+ #else
+     if (rename(srcFullPath.c_str(), destFullPath.c_str()) == 0)
+         return true;
+@@ -535,6 +567,8 @@ u64 GetSize(const std::string& filename) {
+         LOG_TRACE(Common_Filesystem, "{}: {}", filename, result);
+         return result;
+     }
++#elif defined(CHIMERA_CORE)
++    if (ChimeraFS::Stat(filename, &buf) == 0)
+ #else
+     if (stat(filename.c_str(), &buf) == 0)
+ #endif
+@@ -605,6 +639,12 @@ std::optional<std::vector<std::string>> ListDirectoryEntries(const std::string&
+     return entries;
+ }
+ 
++#elif defined(CHIMERA_CORE)
++
++std::optional<std::vector<std::string>> ListDirectoryEntries(const std::string& directory) {
++    return ChimeraFS::List(directory);
++}
++
+ #elif defined(ANDROID) && !defined(HAVE_LIBRETRO_VFS)
+ 
+ std::optional<std::vector<std::string>> ListDirectoryEntries(const std::string& directory) {
+@@ -1503,6 +1543,8 @@ std::size_t IOFile::ReadAtImpl(void* data, std::size_t byte_count, std::size_t o
+     int64_t rv = FREAD(data, 1, byte_count, m_file);
+     FSEEK(m_file, pos, RETRO_VFS_SEEK_POSITION_START);
+     read = static_cast<std::size_t>(rv);
++#elif defined(CHIMERA_CORE)
++    read = ChimeraFS::ReadAt(m_file, data, byte_count, offset);
+ #else
+     read = pread(fileno(m_file), data, byte_count, offset);
+ #endif
+@@ -1630,6 +1672,8 @@ bool IOFile::Resize(u64 size) {
+     if (!IsOpen() || 0 !=
+ #if defined(HAVE_LIBRETRO_VFS)
+                          filestream_truncate(m_file, size)
++#elif defined(CHIMERA_CORE)
++                         ChimeraFS::Truncate(m_file, size)
+ #elif defined(_WIN32)
+                          // ector: _chsize sucks, not 64-bit safe
+                          // F|RES: changed to _chsize_s. i think it is 64-bit safe
+diff --git a/src/core/hw/aes/key.cpp b/src/core/hw/aes/key.cpp
+index b9d90eb..060662d 100644
+--- a/src/core/hw/aes/key.cpp
++++ b/src/core/hw/aes/key.cpp
+@@ -293,12 +293,20 @@ std::istringstream GetKeysStream() {
+     const std::string filepath = FileUtil::GetUserPath(FileUtil::UserPath::SysDataDir) + KEYS_FILE;
+     FileUtil::CreateFullPath(filepath); // Create path if not already created
+ 
++#ifdef CHIMERA_CORE
++    // chimera: a stream on a host descriptor cannot see the machine's own files
++    std::string text;
++    if (FileUtil::ReadFileToString(true, filepath, text) > 0) {
++        return std::istringstream(text);
++    } else {
++#else
+     boost::iostreams::stream<boost::iostreams::file_descriptor_source> file;
+     FileUtil::OpenFStream<std::ios_base::in>(file, filepath);
+     std::istringstream ret;
+     if (file.is_open()) {
+         return std::istringstream(std::string(std::istreambuf_iterator<char>(file), {}));
+     } else {
++#endif
+ #ifdef ENABLE_BUILTIN_KEYBLOB
+         // The key data is encrypted in the source to prevent easy access to it for unintended
+         // purposes.

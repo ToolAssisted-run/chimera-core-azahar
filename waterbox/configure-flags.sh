@@ -1,0 +1,41 @@
+#!/bin/sh
+# The one place the Azahar configure options live. Both flavors source this;
+# they differ ONLY in toolchain. The core libraries and nothing else: no
+# frontend, no network services, no host audio/input/video devices, no Vulkan,
+# and - the one that is a policy, not a size - NO BUILT-IN KEY BLOB: Azahar
+# can compile Nintendo's AES keys into itself, and this package must not carry
+# them any more than it carries a game. A project that needs keys brings its
+# own aes_keys.txt as firmware. See docs/PLAN.md.
+AZAHAR_OPTS="
+-DCMAKE_BUILD_TYPE=Release
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DENABLE_BUILTIN_KEYBLOB=OFF
+-DCHIMERA_CORE=ON
+-DENABLE_QT=OFF
+-DENABLE_QT_TRANSLATION=OFF
+-DENABLE_SDL2=OFF
+-DENABLE_LIBRETRO=OFF
+-DENABLE_TESTS=OFF
+-DENABLE_ROOM=OFF
+-DENABLE_ROOM_STANDALONE=OFF
+-DENABLE_WEB_SERVICE=OFF
+-DENABLE_SCRIPTING=OFF
+-DENABLE_GDBSTUB=OFF
+-DENABLE_CUBEB=OFF
+-DENABLE_OPENAL=OFF
+-DENABLE_LIBUSB=OFF
+-DENABLE_DISCORD_RPC=OFF
+-DENABLE_MICROPROFILE=OFF
+-DENABLE_VULKAN=OFF
+-DENABLE_OPENGL=OFF
+-DENABLE_SOFTWARE_RENDERER=ON
+-DENABLE_LTO=OFF
+-DENABLE_NATIVE_OPTIMIZATION=OFF
+-DENABLE_SSE42=ON
+-DCITRA_USE_PRECOMPILED_HEADERS=OFF
+-DCITRA_WARNINGS_AS_ERRORS=OFF
+-DDYNARMIC_USE_PRECOMPILED_HEADERS=OFF
+-DDYNARMIC_WARNINGS_AS_ERRORS=OFF
+-DZSTD_BUILD_DICTBUILDER=OFF
+-DZSTD_MULTITHREAD_SUPPORT=OFF
+"

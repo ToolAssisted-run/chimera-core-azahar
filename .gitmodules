@@ -1,0 +1,4 @@
+[submodule "extern/azahar"]
+	path = extern/azahar
+	url = https://github.com/azahar-emu/azahar.git
+	shallow = true

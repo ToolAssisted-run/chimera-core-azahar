@@ -1,0 +1,35 @@
+diff --git a/src/audio_core/null_sink.h b/src/audio_core/null_sink.h
+index 1718a16..392284e 100644
+--- a/src/audio_core/null_sink.h
++++ b/src/audio_core/null_sink.h
+@@ -8,6 +8,11 @@
+ #include "audio_core/audio_types.h"
+ #include "audio_core/sink.h"
+ 
++#ifdef CHIMERA_CORE
++/// Implemented by the core's driver: num_samples stereo pairs at 32728 Hz.
++void Chimera_AudioSamples(const s16* data, std::size_t num_samples);
++#endif
++
+ namespace AudioCore {
+ 
+ class NullSink final : public Sink {
+@@ -20,6 +25,18 @@ public:
+     }
+ 
+     void SetCallback(std::function<void(s16*, std::size_t)>) override {}
++
++#ifdef CHIMERA_CORE
++    // chimera: the frames go to the core as the DSP makes them - no FIFO, no
++    // time stretching, nothing that depends on how fast the host drains it
++    bool ImmediateSubmission() override {
++        return true;
++    }
++
++    void PushSamples(const void* data, std::size_t num_samples) override {
++        Chimera_AudioSamples(static_cast<const s16*>(data), num_samples);
++    }
++#endif
+ };
+ 
+ } // namespace AudioCore

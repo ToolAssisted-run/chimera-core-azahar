@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2a6dcb9..e8fb86e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -222,7 +222,9 @@ if (CITRA_USE_PRECOMPILED_HEADERS)
+     endif()
+ endif()
+ 
+-if(NOT EXISTS ${PROJECT_SOURCE_DIR}/.git/hooks/pre-commit)
++# chimera: as a submodule .git is a file, not a directory, and there is no
++# hooks folder to copy into
++if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/.git AND NOT EXISTS ${PROJECT_SOURCE_DIR}/.git/hooks/pre-commit)
+     message(STATUS "Copying pre-commit hook")
+     file(COPY hooks/pre-commit
+         DESTINATION ${PROJECT_SOURCE_DIR}/.git/hooks)

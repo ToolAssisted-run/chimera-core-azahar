@@ -1,0 +1,268 @@
+diff --git a/src/common/machine_random.h b/src/common/machine_random.h
+new file mode 100644
+index 0000000..184fe7f
+--- /dev/null
++++ b/src/common/machine_random.h
+@@ -0,0 +1,57 @@
++// Copyright 2026 Chimera
++// Licensed under GPLv2 or any later version
++// Refer to the license.txt file included.
++
++// chimera: the randomness a machine draws is part of the machine.
++//
++// Upstream seeds everything that wants random bytes from the host - CryptoPP's
++// AutoSeededRandomPool reads the OS's entropy, OpenSSL's RAND_bytes likewise -
++// which makes the console a different console on every run: its unique id and
++// MAC address, generated once when the config is created, the random data ssl:C
++// hands a game, the nonces NFC writes. A movie cannot replay on a machine like
++// that, and inside the sandbox there is no entropy to read at all.
++//
++// So there is one stream, in the machine's own memory: a savestate carries its
++// position, and every run of the same inputs draws the same numbers in the same
++// order. splitmix64 - small, and good enough for everything above, none of which
++// is protecting anything on a machine that only ever talks to itself.
++
++#pragma once
++
++#include <cstddef>
++#include <cstring>
++#include <cryptopp/cryptlib.h>
++#include "common/common_types.h"
++
++namespace Common::MachineRandom {
++
++inline u64 g_state = 0x3D5E1F2A6B7C8D90ULL;
++
++inline u64 Next() {
++    u64 z = (g_state += 0x9E3779B97F4A7C15ULL);
++    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
++    z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
++    return z ^ (z >> 31);
++}
++
++inline void Fill(void* out, std::size_t size) {
++    u8* p = static_cast<u8*>(out);
++    while (size > 0) {
++        const u64 v = Next();
++        const std::size_t n = size < sizeof(v) ? size : sizeof(v);
++        std::memcpy(p, &v, n);
++        p += n;
++        size -= n;
++    }
++}
++
++/// A CryptoPP generator drawing from the machine's stream, for the places that
++/// hand one to CryptoPP (key validation, signing, the id generators).
++class Pool final : public CryptoPP::RandomNumberGenerator {
++public:
++    void GenerateBlock(CryptoPP::byte* output, std::size_t size) override {
++        Fill(output, size);
++    }
++};
++
++} // namespace Common::MachineRandom
+diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
+index 88e0ec9..50cee0b 100644
+--- a/src/common/CMakeLists.txt
++++ b/src/common/CMakeLists.txt
+@@ -52,6 +52,7 @@ add_library(citra_common STATIC EXCLUDE_FROM_ALL
+     logging/text_formatter.cpp
+     logging/text_formatter.h
+     logging/types.h
++    machine_random.h
+     math_util.cpp
+     math_util.h
+     memory_detect.cpp
+diff --git a/src/core/hw/ecc.cpp b/src/core/hw/ecc.cpp
+index 427cc9f..daa69cd 100644
+--- a/src/core/hw/ecc.cpp
++++ b/src/core/hw/ecc.cpp
+@@ -12,6 +12,7 @@
+ #include "common/string_util.h"
+ #include "core/hw/aes/key.h"
+ #include "core/hw/ecc.h"
++#include "common/machine_random.h"
+ #include "cryptopp/osrng.h"
+ 
+ namespace HW::ECC {
+@@ -25,7 +26,7 @@ CryptoPPInteger PrivateKey::AsCryptoPPInteger() const {
+ 
+ CryptoPPECCPrivateKey PrivateKey::AsCryptoPPPrivateKey() const {
+     CryptoPPECCPrivateKey private_key_cpp;
+-    CryptoPP::AutoSeededRandomPool prng;
++    Common::MachineRandom::Pool prng;
+ 
+     private_key_cpp.Initialize(CryptoPP::ASN1::sect233r1(), AsCryptoPPInteger());
+     if (!private_key_cpp.Validate(prng, 3)) {
+@@ -162,7 +163,7 @@ std::pair<PrivateKey, PublicKey> GenerateKeyPair() {
+     CryptoPPECCPrivateKey private_key_cpp;
+     PrivateKey private_key;
+ 
+-    CryptoPP::AutoSeededRandomPool prng;
++    Common::MachineRandom::Pool prng;
+ 
+     private_key_cpp.Initialize(prng, CryptoPP::ASN1::sect233r1());
+     private_key_cpp.GetPrivateExponent().Encode(private_key.x.data(), private_key.x.size());
+@@ -173,7 +174,7 @@ std::pair<PrivateKey, PublicKey> GenerateKeyPair() {
+ Signature Sign(std::span<const u8> data, PrivateKey private_key) {
+     CryptoPP::ECDSA<CryptoPP::EC2N, CryptoPP::SHA256>::Signer signer(
+         private_key.AsCryptoPPPrivateKey());
+-    CryptoPP::AutoSeededRandomPool prng;
++    Common::MachineRandom::Pool prng;
+ 
+     Signature ret;
+ 
+diff --git a/src/core/hw/rsa/rsa.cpp b/src/core/hw/rsa/rsa.cpp
+index 19cb609..a199272 100644
+--- a/src/core/hw/rsa/rsa.cpp
++++ b/src/core/hw/rsa/rsa.cpp
+@@ -16,6 +16,7 @@
+ #include "common/string_util.h"
+ #include "core/hw/aes/key.h"
+ #include "core/hw/rsa/rsa.h"
++#include "common/machine_random.h"
+ #include "cryptopp/osrng.h"
+ #include "cryptopp/rsa.h"
+ 
+@@ -52,7 +53,7 @@ std::vector<u8> RsaSlot::Sign(std::span<const u8> message) const {
+                            CryptoPP::Integer(private_d.data(), private_d.size()));
+ 
+     CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA256>::Signer signer(private_key);
+-    CryptoPP::AutoSeededRandomPool prng;
++    Common::MachineRandom::Pool prng;
+     std::vector<u8> ret(signer.SignatureLength());
+ 
+     signer.SignMessage(prng, message.data(), message.size(), ret.data());
+diff --git a/src/core/hle/service/nfc/nfc_device.cpp b/src/core/hle/service/nfc/nfc_device.cpp
+index 5f28771..496130c 100644
+--- a/src/core/hle/service/nfc/nfc_device.cpp
++++ b/src/core/hle/service/nfc/nfc_device.cpp
+@@ -6,6 +6,7 @@
+ #include <chrono>
+ #include <boost/crc.hpp>
+ #include <cryptopp/osrng.h>
++#include "common/machine_random.h"
+ 
+ #include "common/file_util.h"
+ #include "common/logging/log.h"
+@@ -627,7 +628,7 @@ Result NfcDevice::DeleteRegisterInfo() {
+         return ResultNeedRegister;
+     }
+ 
+-    CryptoPP::AutoSeededRandomPool rng;
++    Common::MachineRandom::Pool rng;
+     const std::size_t mii_data_size = sizeof(tag.file.owner_mii);
+     std::array<CryptoPP::byte, mii_data_size> buffer{};
+     rng.GenerateBlock(buffer.data(), mii_data_size);
+@@ -817,7 +818,7 @@ Result NfcDevice::SetApplicationArea(std::span<const u8> data) {
+     std::memcpy(tag.file.application_area.data(), data.data(), data.size());
+ 
+     // Fill remaining data with random numbers
+-    CryptoPP::AutoSeededRandomPool rng;
++    Common::MachineRandom::Pool rng;
+     const std::size_t data_size = sizeof(ApplicationArea) - data.size();
+     std::vector<CryptoPP::byte> buffer(data_size);
+     rng.GenerateBlock(buffer.data(), data_size);
+@@ -873,7 +874,7 @@ Result NfcDevice::RecreateApplicationArea(u32 access_id, std::span<const u8> dat
+     std::memcpy(tag.file.application_area.data(), data.data(), data.size());
+ 
+     // Fill remaining data with random numbers
+-    CryptoPP::AutoSeededRandomPool rng;
++    Common::MachineRandom::Pool rng;
+     const std::size_t data_size = sizeof(ApplicationArea) - data.size();
+     std::vector<CryptoPP::byte> buffer(data_size);
+     rng.GenerateBlock(buffer.data(), data_size);
+@@ -920,7 +921,7 @@ Result NfcDevice::DeleteApplicationArea() {
+         return ResultNeedCreate;
+     }
+ 
+-    CryptoPP::AutoSeededRandomPool rng;
++    Common::MachineRandom::Pool rng;
+     constexpr std::size_t data_size = sizeof(ApplicationArea);
+     std::array<CryptoPP::byte, data_size> buffer{};
+     rng.GenerateBlock(buffer.data(), data_size);
+diff --git a/src/core/hle/service/cfg/cfg.cpp b/src/core/hle/service/cfg/cfg.cpp
+index 6eb7302..b436222 100644
+--- a/src/core/hle/service/cfg/cfg.cpp
++++ b/src/core/hle/service/cfg/cfg.cpp
+@@ -8,6 +8,7 @@
+ #include <boost/serialization/array.hpp>
+ #include <boost/serialization/unique_ptr.hpp>
+ #include <cryptopp/osrng.h>
++#include "common/machine_random.h"
+ #include <cryptopp/sha.h>
+ #include <fmt/ranges.h>
+ #include "common/archives.h"
+@@ -1251,7 +1252,7 @@ u8 Module::GetStateCode() {
+ }
+ 
+ std::pair<u32, u64> Module::GenerateConsoleUniqueId() const {
+-    CryptoPP::AutoSeededRandomPool rng;
++    Common::MachineRandom::Pool rng;
+     const u32 random_number = rng.GenerateWord32(0, 0xFFFF);
+ 
+     u64_le local_friend_code_seed;
+@@ -1410,7 +1411,7 @@ std::string GenerateRandomMAC() {
+         {0x7CBB8A000000ULL, 0x7CBB8AFFFFFFULL},
+         {0x8CCDE8000000ULL, 0x8CCDE8FFFFFFULL},
+     }};
+-    CryptoPP::AutoSeededRandomPool rng;
++    Common::MachineRandom::Pool rng;
+     auto& range = ranges[rng.GenerateWord32(0, static_cast<CryptoPP::word32>(ranges.size() - 1))];
+     u64 mac = range.first +
+               rng.GenerateWord32(0, static_cast<CryptoPP::word32>(range.second - range.first));
+diff --git a/src/core/hle/service/ssl/ssl_c.cpp b/src/core/hle/service/ssl/ssl_c.cpp
+index 415c718..9f24479 100644
+--- a/src/core/hle/service/ssl/ssl_c.cpp
++++ b/src/core/hle/service/ssl/ssl_c.cpp
+@@ -2,9 +2,9 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+ 
+-#include <openssl/rand.h>
+ #include "common/archives.h"
+ #include "common/common_types.h"
++#include "common/machine_random.h"
+ #include "core/core.h"
+ #include "core/hle/ipc.h"
+ #include "core/hle/ipc_helpers.h"
+@@ -75,7 +75,7 @@ void InstallInterfaces(Core::System& system) {
+ 
+ void GenerateRandomData(std::vector<u8>& out) {
+     // Fill the output buffer with random data.
+-    RAND_bytes(out.data(), static_cast<int>(out.size()));
++    Common::MachineRandom::Fill(out.data(), out.size());
+ }
+ 
+ } // namespace Service::SSL
+diff --git a/src/core/hle/service/am/am.cpp b/src/core/hle/service/am/am.cpp
+index 9581817..0f5af89 100644
+--- a/src/core/hle/service/am/am.cpp
++++ b/src/core/hle/service/am/am.cpp
+@@ -8,7 +8,6 @@
+ #include <cryptopp/aes.h>
+ #include <cryptopp/modes.h>
+ #include <fmt/format.h>
+-#include <openssl/rand.h>
+ #include "common/alignment.h"
+ #include "common/archives.h"
+ #include "common/common_paths.h"
+@@ -16,6 +15,7 @@
+ #include "common/file_util.h"
+ #include "common/hacks/hack_manager.h"
+ #include "common/logging/log.h"
++#include "common/machine_random.h"
+ #include "common/string_util.h"
+ #include "common/zstd_compression.h"
+ #include "core/core.h"
+@@ -4948,8 +4948,8 @@ void Module::Interface::ExportTicketWrapped(Kernel::HLERequestContext& ctx) {
+     std::vector<u8> key(0x10);
+     std::vector<u8> iv(0x10);
+ 
+-    RAND_bytes(key.data(), static_cast<int>(key.size()));
+-    RAND_bytes(iv.data(), static_cast<int>(iv.size()));
++    Common::MachineRandom::Fill(key.data(), key.size());
++    Common::MachineRandom::Fill(iv.data(), iv.size());
+ 
+     CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption e(key.data(), key.size(), iv.data());
+     e.ProcessData(ticket_data.data(), ticket_data.data(), ticket_data.size());

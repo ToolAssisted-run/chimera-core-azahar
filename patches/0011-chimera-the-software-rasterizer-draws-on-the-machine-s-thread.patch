@@ -1,0 +1,35 @@
+diff --git a/src/video_core/renderer_software/sw_rasterizer.cpp b/src/video_core/renderer_software/sw_rasterizer.cpp
+index a64c951..a5ff6a3 100644
+--- a/src/video_core/renderer_software/sw_rasterizer.cpp
++++ b/src/video_core/renderer_software/sw_rasterizer.cpp
+@@ -102,7 +102,13 @@ private:
+ 
+ RasterizerSoftware::RasterizerSoftware(Memory::MemorySystem& memory_, Pica::PicaCore& pica_)
+     : memory{memory_}, pica{pica_}, regs{pica.regs.internal},
++#ifdef CHIMERA_CORE
++      // chimera: every scanline is drawn on the machine's own thread (below);
++      // the pool keeps its one worker idle
++      num_sw_threads{1},
++#else
+       num_sw_threads{std::max(std::thread::hardware_concurrency(), 2U)},
++#endif
+       sw_workers{num_sw_threads, "SwRenderer workers"}, fb{memory, regs.framebuffer} {}
+ 
+ void RasterizerSoftware::AddTriangle(const Pica::OutputVertex& v0, const Pica::OutputVertex& v1,
+@@ -467,9 +473,16 @@ void RasterizerSoftware::ProcessTriangle(const Vertex& v0, const Vertex& v1, con
+                 }
+             }
+         };
++#ifdef CHIMERA_CORE
++        // chimera: in order, here - a worker per scanline is a thread switch per
++        // scanline in the sandbox, and a picture must not depend on scheduling
++        process_scanline();
++    }
++#else
+         sw_workers.QueueWork(std::move(process_scanline));
+     }
+     sw_workers.WaitForRequests();
++#endif
+ }
+ 
+ std::array<Common::Vec4<u8>, 4> RasterizerSoftware::TextureColor(

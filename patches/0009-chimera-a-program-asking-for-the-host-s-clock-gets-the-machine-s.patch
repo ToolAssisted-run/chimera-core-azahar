@@ -1,0 +1,19 @@
+diff --git a/src/core/hle/kernel/svc.cpp b/src/core/hle/kernel/svc.cpp
+index 14d0998..8db7354 100644
+--- a/src/core/hle/kernel/svc.cpp
++++ b/src/core/hle/kernel/svc.cpp
+@@ -1869,9 +1869,14 @@ Result SVC::GetSystemInfo(s64* out, u32 type, s32 param) {
+             *out = static_cast<s64>(EmulatorIDs::AZAHAR_EMULATOR);
+             break;
+         case SystemInfoEmulatorInformation::HOST_TICK:
++#ifdef CHIMERA_CORE
++            // chimera: the machine's own clock - a program must not see the host's
++            *out = static_cast<s64>(cyclesToNs(system.CoreTiming().GetGlobalTicks()));
++#else
+             *out = static_cast<s64>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                         std::chrono::steady_clock::now().time_since_epoch())
+                                         .count());
++#endif
+             break;
+         case SystemInfoEmulatorInformation::EMULATION_SPEED:
+             *out = static_cast<s64>(Settings::values.frame_limit.GetValue());

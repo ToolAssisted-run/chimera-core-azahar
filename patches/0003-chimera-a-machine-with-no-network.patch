@@ -1,0 +1,144 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 329af28..23871c9 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -186,6 +186,11 @@ endif()
+ if(ENABLE_BUILTIN_KEYBLOB)
+     add_compile_definitions(ENABLE_BUILTIN_KEYBLOB)
+ endif()
++# chimera: built as a Chimera core - a deterministic machine in a sandbox,
++# with no network, no host clock and no host filesystem (see the patches)
++if(CHIMERA_CORE)
++    add_compile_definitions(CHIMERA_CORE)
++endif()
+ 
+ add_subdirectory(common)
+ add_subdirectory(core)
+diff --git a/externals/CMakeLists.txt b/externals/CMakeLists.txt
+index a63ee57..0db67c8 100644
+--- a/externals/CMakeLists.txt
++++ b/externals/CMakeLists.txt
+@@ -317,7 +317,11 @@ else()
+ endif()
+ 
+ # OpenSSL
+-if (USE_SYSTEM_OPENSSL)
++if (CHIMERA_CORE)
++    # chimera: no TLS - the machine has no network (see http_c.cpp), and
++    # LibreSSL does not build against the sandbox's libc
++    set(OPENSSL_LIBRARIES "")
++elseif (USE_SYSTEM_OPENSSL)
+     find_package(OpenSSL 1.1)
+     set(OPENSSL_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+ else()
+@@ -358,7 +362,9 @@ else()
+     target_include_directories(httplib INTERFACE ./httplib)
+     target_disable_warnings(httplib)
+ endif()
+-target_compile_options(httplib INTERFACE -DCPPHTTPLIB_OPENSSL_SUPPORT)
++if (NOT CHIMERA_CORE)
++    target_compile_options(httplib INTERFACE -DCPPHTTPLIB_OPENSSL_SUPPORT)
++endif()
+ target_link_libraries(httplib INTERFACE ${OPENSSL_LIBRARIES})
+ 
+ if (UNIX AND NOT APPLE)
+diff --git a/src/core/hle/service/http/http_c.cpp b/src/core/hle/service/http/http_c.cpp
+index d64562e..418e5ee 100644
+--- a/src/core/hle/service/http/http_c.cpp
++++ b/src/core/hle/service/http/http_c.cpp
+@@ -34,6 +34,17 @@ SERIALIZE_EXPORT_IMPL(Service::HTTP::SessionData)
+ 
+ namespace Service::HTTP {
+ 
++// chimera: upstream runs every request on a host thread of its own, and when it
++// ends is then the host's business. There is no network in a Chimera machine:
++// the request runs - and fails, the way one does with no connection - on the
++// machine's own thread, so every run sees it end at the same moment.
++#ifdef CHIMERA_CORE
++#define CHIMERA_LAUNCH_REQUEST(ctx) ((ctx).MakeRequest(), std::future<void>{})
++#else
++#define CHIMERA_LAUNCH_REQUEST(ctx)                                                                \
++    std::async(std::launch::async, &Context::MakeRequest, std::ref(ctx))
++#endif
++
+ #include "ctr-common-1-cert.h"
+ #include "ctr-common-1-key.h"
+ 
+@@ -379,6 +390,13 @@ Context::ReceiveResult Context::ReceiveBody(std::size_t size,
+ void Context::MakeRequest() {
+     ASSERT(state == RequestState::NotStarted);
+ 
++#ifdef CHIMERA_CORE
++    LOG_WARNING(Service_HTTP, "no network: request to {} fails", url);
++    state = RequestState::Completed;
++    FinishTransfer();
++    return;
++#endif
++
+     state = RequestState::SendingRequest;
+ 
+     static const std::unordered_map<RequestMethod, std::string> request_method_strings{
+@@ -500,6 +518,12 @@ void Context::MakeRequestNonSSL(httplib::Request& request, const Common::URLInfo
+ 
+ void Context::MakeRequestSSL(httplib::Request& request, const Common::URLInfo& url_info,
+                              std::vector<Context::RequestHeader>& pending_headers) {
++#ifdef CHIMERA_CORE
++    // built without TLS; MakeRequest never gets here
++    state = RequestState::Completed;
++    FinishTransfer();
++}
++#else
+     httplib::Error error{-1};
+     X509* cert = nullptr;
+     EVP_PKEY* key = nullptr;
+@@ -557,6 +581,7 @@ void Context::MakeRequestSSL(httplib::Request& request, const Common::URLInfo& u
+ 
+     FinishTransfer();
+ }
++#endif
+ 
+ bool Context::ContentProvider(size_t offset, size_t length, httplib::DataSink& sink) {
+     if (!post_data_raw.empty()) {
+@@ -691,7 +716,7 @@ void HTTP_C::BeginRequest(Kernel::HLERequestContext& ctx) {
+         } else {
+             http_context.current_copied_data = 0;
+             http_context.request_future =
+-                std::async(std::launch::async, &Context::MakeRequest, std::ref(http_context));
++                CHIMERA_LAUNCH_REQUEST(http_context);
+         }
+     }
+ 
+@@ -733,7 +758,7 @@ void HTTP_C::BeginRequestAsync(Kernel::HLERequestContext& ctx) {
+         } else {
+             http_context.current_copied_data = 0;
+             http_context.request_future =
+-                std::async(std::launch::async, &Context::MakeRequest, std::ref(http_context));
++                CHIMERA_LAUNCH_REQUEST(http_context);
+         }
+     }
+ 
+@@ -1539,7 +1564,7 @@ void HTTP_C::NotifyFinishSendPostData(Kernel::HLERequestContext& ctx) {
+ 
+     http_context.current_copied_data = 0;
+     http_context.request_future =
+-        std::async(std::launch::async, &Context::MakeRequest, std::ref(http_context));
++        CHIMERA_LAUNCH_REQUEST(http_context);
+ 
+     IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
+     rb.Push(ResultSuccess);
+diff --git a/src/core/nus_download.cpp b/src/core/nus_download.cpp
+index d9d79ae..ccc3b53 100644
+--- a/src/core/nus_download.cpp
++++ b/src/core/nus_download.cpp
+@@ -11,6 +11,11 @@ namespace Core::NUS {
+ 
+ std::optional<std::vector<u8>> Download(const std::string& path) {
+     constexpr auto HOST = "http://nus.cdn.c.shop.nintendowifi.net";
++#ifdef CHIMERA_CORE
++    // chimera: the machine has no network
++    LOG_ERROR(WebService, "no network: GET {}{} fails", HOST, path);
++    return {};
++#endif
+ 
+     std::unique_ptr<httplib::Client> client = std::make_unique<httplib::Client>(HOST);
+     if (client == nullptr) {

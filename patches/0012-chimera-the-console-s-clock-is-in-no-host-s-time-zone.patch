@@ -1,0 +1,49 @@
+diff --git a/src/core/hle/kernel/shared_page.cpp b/src/core/hle/kernel/shared_page.cpp
+index ef7f169..0a1b408 100644
+--- a/src/core/hle/kernel/shared_page.cpp
++++ b/src/core/hle/kernel/shared_page.cpp
+@@ -109,7 +109,15 @@ u64 Handler::GetSystemTimeSince2000() const {
+     epoch_tm.tm_mon = 0;
+     epoch_tm.tm_year = 100;
+     epoch_tm.tm_isdst = 0;
++#ifdef CHIMERA_CORE
++    // chimera: 2000-01-01 in UTC. mktime reads it in the HOST's time zone, so
++    // the console's clock was an hour apart between a host in Madrid and one in
++    // UTC - and the sandbox, which has no time zone, is one in UTC.
++    (void)epoch_tm;
++    s64 epoch = 946684800LL * 1000;
++#else
+     s64 epoch = std::mktime(&epoch_tm) * 1000;
++#endif
+ 
+     // Only when system time is after 2000, we set it as 3DS system time
+     if (now.count() > epoch) {
+diff --git a/src/core/hle/service/nfc/nfc_device.cpp b/src/core/hle/service/nfc/nfc_device.cpp
+index 496130c..340d764 100644
+--- a/src/core/hle/service/nfc/nfc_device.cpp
++++ b/src/core/hle/service/nfc/nfc_device.cpp
+@@ -1021,13 +1021,24 @@ time_t NfcDevice::GetCurrentTime() const {
+     epoch_tm.tm_mon = 0;
+     epoch_tm.tm_year = 100;
+     epoch_tm.tm_isdst = 0;
++#ifdef CHIMERA_CORE
++    // chimera: in UTC, like the console's clock (see shared_page.cpp)
++    (void)epoch_tm;
++    s64 epoch = 946684800LL;
++#else
+     s64 epoch = std::mktime(&epoch_tm);
++#endif
+     return static_cast<time_t>(console_time - START_DATE + epoch);
+ }
+ 
+ AmiiboDate NfcDevice::GetAmiiboDate() const {
+     auto now = GetCurrentTime();
++#ifdef CHIMERA_CORE
++    tm local_tm{};
++    gmtime_r(&now, &local_tm);
++#else
+     tm local_tm = *localtime(&now);
++#endif
+     AmiiboDate amiibo_date{};
+ 
+     amiibo_date.SetYear(static_cast<u16>(local_tm.tm_year + 1900));

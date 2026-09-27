@@ -1,0 +1,47 @@
+diff --git a/src/core/file_sys/ncch_container.cpp b/src/core/file_sys/ncch_container.cpp
+index be2b24f..c75b667 100644
+--- a/src/core/file_sys/ncch_container.cpp
++++ b/src/core/file_sys/ncch_container.cpp
+@@ -2,6 +2,7 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+ 
++#include <array>
+ #include <cstring>
+ #include <memory>
+ #include <span>
+@@ -223,6 +224,34 @@ Loader::ResultStatus NCCHContainer::LoadHeader() {
+ 
+     LOG_DEBUG(Service_FS, "NCCH type: {}", file->GetType().to_string());
+ 
++#ifdef CHIMERA_CORE
++    // chimera: some older decryption tools wrote the plaintext back but left the
++    // header saying it is encrypted (NoCrypto clear). The ExeFS header tells them
++    // apart: encrypted, its first file name is noise; decrypted, it is ".code" or
++    // another short ASCII name padded with zeros. The chance that noise passes is
++    // well under one in a thousand.
++    if (!ncch_header.no_crypto && ncch_header.exefs_offset != 0) {
++        const u64 block_size = ncch_header.content_size == file->GetSize() ? 1 : kBlockSize;
++        std::array<u8, 8> name{};
++        if (file->ReadAtBytes(name.data(), name.size(), ncch_header.exefs_offset * block_size) ==
++            name.size()) {
++            std::size_t len = 0;
++            while (len < name.size() && name[len] >= 0x20 && name[len] < 0x7F) {
++                len++;
++            }
++            bool plain = len > 0;
++            for (std::size_t i = len; i < name.size(); i++) {
++                plain = plain && name[i] == 0;
++            }
++            if (plain) {
++                LOG_WARNING(Service_FS, "the NCCH says it is encrypted, but its ExeFS is "
++                                        "plaintext: loading it as decrypted");
++                ncch_header.no_crypto.Assign(1);
++            }
++        }
++    }
++#endif
++
+     if (!ncch_header.no_crypto) {
+         // Encrypted NCCH are not supported
+         return Loader::ResultStatus::ErrorEncrypted;
