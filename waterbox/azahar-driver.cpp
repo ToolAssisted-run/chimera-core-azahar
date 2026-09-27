@@ -24,6 +24,9 @@
 #include "core/frontend/emu_window.h"
 #include "core/frontend/image_interface.h"
 #include "core/frontend/input.h"
+#include "core/hle/kernel/config_mem.h"
+#include "core/hle/kernel/kernel.h"
+#include "core/hle/kernel/shared_page.h"
 #include "core/hle/service/service.h"
 #include "core/loader/loader.h"
 #include "core/memory.h"
@@ -321,6 +324,36 @@ bool Init(const Machine& m, const std::string& rom)
   system.RegisterImageInterface(std::make_shared<Frontend::ImageInterface>());
 
   g_window = std::make_unique<Window>();
+  // The game's header first, the way the libretro frontend does it: System::
+  // Load reports an encrypted game as "cannot determine the system mode",
+  // which tells a person nothing. The loader is handed on, not opened twice.
+  {
+    auto loader = Loader::GetLoader(rom);
+    if (!loader)
+    {
+      g_error = "no loader for the game file (" + rom + ")";
+      return false;
+    }
+    const auto [mode, status] = loader->LoadKernelMemoryMode();
+    (void)mode;
+    if (status == Loader::ResultStatus::ErrorEncrypted)
+    {
+      g_error = "the game is encrypted: Azahar runs decrypted dumps only (.3ds/.cci/.cxi "
+                "decrypted, or .3dsx homebrew)";
+      return false;
+    }
+    if (status == Loader::ResultStatus::ErrorInvalidFormat)
+    {
+      g_error = "the game file is not a format Azahar reads (.3ds .cci .cxi .app .3dsx .elf)";
+      return false;
+    }
+    if (status == Loader::ResultStatus::ErrorGbaTitle)
+    {
+      g_error = "a GBA Virtual Console title: Azahar does not run those";
+      return false;
+    }
+    system.RegisterAppLoaderEarly(loader);
+  }
   const auto result = system.Load(*g_window, rom);
   switch (result)
   {
@@ -433,6 +466,14 @@ std::vector<Domain> Domains()
   d.push_back({"FCRAM", mem.GetFCRAMPointer(0),
                g_machine.new3ds ? Memory::FCRAM_N3DS_SIZE : Memory::FCRAM_SIZE});
   d.push_back({"VRAM", mem.GetPhysicalPointer(Memory::VRAM_PADDR), Memory::VRAM_SIZE});
+  // The two pages the kernel shares with every process: the configuration
+  // (firmware version, memory layout) and the shared page (the RTC, the 3D
+  // slider, the battery).
+  auto& kernel = Core::System::GetInstance().Kernel();
+  d.push_back({"Config Memory", reinterpret_cast<uint8_t*>(&kernel.GetConfigMemHandler().GetConfigMem()),
+               static_cast<int64_t>(sizeof(ConfigMem::ConfigMemDef))});
+  d.push_back({"Shared Page", reinterpret_cast<uint8_t*>(&kernel.GetSharedPageHandler().GetSharedPage()),
+               static_cast<int64_t>(sizeof(SharedPage::SharedPageDef))});
   return d;
 }
 

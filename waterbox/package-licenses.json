@@ -1,0 +1,127 @@
+{
+  "package": "azahar",
+  "effectiveTerms": "GPL-2.0-or-later",
+  "commercialUse": "allowed under the GPL",
+  "note": "The built core combines this repository's integration (MIT) with Azahar, which is GPL-2.0-or-later, and the libraries it links: FAAD2 is GPL-2.0-or-later and SoundTouch LGPL-2.1-or-later, and everything else is permissive (dynarmic 0BSD; Boost and Crypto++ BSL-1.0; fmt, teakra, ENet, mcl, robin-map, Zydis and Zycore MIT; zstd, xbyak and nihstro BSD-3-Clause; xxHash BSD-2-Clause; LodePNG zlib). The system font, Mii data and word lists Azahar builds in are its own open-source replacements (externals/open_source_archives), not Nintendo's. The package is built WITHOUT Azahar's built-in key blob (ENABLE_BUILTIN_KEYBLOB=OFF): it carries no Nintendo key, no game and no firmware.",
+  "components": [
+    {
+      "name": "chimera-core-azahar (integration)",
+      "license": "MIT, and Azahar's terms for patches/",
+      "url": "https://github.com/ToolAssisted-run/chimera-core-azahar",
+      "commit": "{selfCommit}",
+      "file": "LICENSE",
+      "sourceUrl": "https://github.com/ToolAssisted-run/chimera-core-azahar/archive/{commit}.tar.gz"
+    },
+    {
+      "name": "Azahar",
+      "license": "GPL-2.0-or-later",
+      "url": "https://github.com/azahar-emu/azahar",
+      "commit": "{submodule:extern/azahar}",
+      "file": "extern/azahar/license.txt",
+      "sourceUrl": "https://github.com/azahar-emu/azahar/archive/{commit}.tar.gz"
+    },
+    {
+      "name": "dynarmic",
+      "license": "0BSD",
+      "url": "https://github.com/azahar-emu/dynarmic",
+      "commit": "{submodule:extern/azahar/externals/dynarmic}",
+      "file": "extern/azahar/externals/dynarmic/LICENSE.txt"
+    },
+    {
+      "name": "mcl (dynarmic)",
+      "license": "MIT",
+      "url": "https://github.com/azahar-emu/mcl",
+      "file": "extern/azahar/externals/dynarmic/externals/mcl/LICENSE"
+    },
+    {
+      "name": "robin-map (dynarmic)",
+      "license": "MIT",
+      "url": "https://github.com/Tessil/robin-map",
+      "file": "extern/azahar/externals/dynarmic/externals/robin-map/LICENSE"
+    },
+    {
+      "name": "Zydis (dynarmic)",
+      "license": "MIT",
+      "url": "https://github.com/zyantific/zydis",
+      "file": "extern/azahar/externals/dynarmic/externals/zydis/LICENSE"
+    },
+    {
+      "name": "Zycore (dynarmic)",
+      "license": "MIT",
+      "url": "https://github.com/zyantific/zycore-c",
+      "file": "extern/azahar/externals/dynarmic/externals/zycore/LICENSE"
+    },
+    {
+      "name": "xbyak",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/herumi/xbyak",
+      "file": "extern/azahar/externals/xbyak/COPYRIGHT"
+    },
+    {
+      "name": "teakra",
+      "license": "MIT",
+      "url": "https://github.com/wwylele/teakra",
+      "file": "extern/azahar/externals/teakra/LICENSE"
+    },
+    {
+      "name": "Boost (serialization, iostreams, headers)",
+      "license": "BSL-1.0",
+      "url": "https://www.boost.org",
+      "file": "extern/azahar/externals/boost/LICENSE_1_0.txt"
+    },
+    {
+      "name": "Crypto++",
+      "license": "BSL-1.0",
+      "url": "https://github.com/cryptopp-modern/cryptopp-modern",
+      "file": "extern/azahar/externals/cryptopp/LICENSE"
+    },
+    {
+      "name": "fmt",
+      "license": "MIT",
+      "url": "https://github.com/fmtlib/fmt",
+      "file": "extern/azahar/externals/fmt/LICENSE"
+    },
+    {
+      "name": "SoundTouch",
+      "license": "LGPL-2.1-or-later",
+      "url": "https://codeberg.org/soundtouch/soundtouch",
+      "file": "extern/azahar/externals/soundtouch/COPYING.TXT"
+    },
+    {
+      "name": "FAAD2",
+      "license": "GPL-2.0-or-later",
+      "url": "https://github.com/knik0/faad2",
+      "file": "extern/azahar/externals/faad2/faad2/COPYING"
+    },
+    {
+      "name": "zstd",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/facebook/zstd",
+      "file": "extern/azahar/externals/zstd/LICENSE"
+    },
+    {
+      "name": "xxHash",
+      "license": "BSD-2-Clause",
+      "url": "https://github.com/Cyan4973/xxHash",
+      "file": "extern/azahar/externals/xxHash/LICENSE"
+    },
+    {
+      "name": "LodePNG",
+      "license": "Zlib",
+      "url": "https://github.com/lvandeve/lodepng",
+      "file": "extern/azahar/externals/lodepng/lodepng/LICENSE"
+    },
+    {
+      "name": "ENet",
+      "license": "MIT",
+      "url": "https://github.com/lsalzman/enet",
+      "file": "extern/azahar/externals/enet/LICENSE"
+    },
+    {
+      "name": "nihstro",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/neobrain/nihstro",
+      "file": "extern/azahar/externals/nihstro/license.txt"
+    }
+  ]
+}
