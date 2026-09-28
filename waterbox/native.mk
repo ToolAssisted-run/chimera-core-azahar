@@ -8,7 +8,7 @@
 ROOT := ..
 B    := $(ROOT)/build/native
 O    := obj-native
-MB   ?= $(HOME)/chimera/extern/chimera-common-minibox
+MB   ?= $(or $(MINIBOX_DIR),$(HOME)/chimera/extern/chimera-common-minibox)
 
 TUFLAGS  := $(shell python3 extract-tu-flags.py $(B)/compile_commands.json src/core/core.cpp)
 MBINCS   := -Inative-shim -I$(MB)/source/guest/include -I$(MB)/extern/jsmn

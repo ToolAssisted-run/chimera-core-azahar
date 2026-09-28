@@ -66,7 +66,7 @@ last() { stream "$1" | tail -1; }
 
 # ---------------------------------------------------------------- 1. build
 if [ "$quick" -eq 0 ]; then
-	if sh "$here/build-native.sh" > "$work/native.log" 2>&1 && make -C "$here" -f native.mk > "$work/native-mk.log" 2>&1; then
+	if sh "$here/build-native.sh" > "$work/native.log" 2>&1 && make -C "$here" -f native.mk MB="$mb" > "$work/native-mk.log" 2>&1; then
 		report PASS "the native reference and harness build"
 	else
 		report FAIL "the native reference and harness build" "see build/gate/native.log"
