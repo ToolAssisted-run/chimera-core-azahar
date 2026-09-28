@@ -35,6 +35,10 @@ All of them are part of the machine: a movie needs the same values.
   then runs with the machine, never with the host.
 - **CPU**: dynarmic's recompiler (default) or the interpreter.
 - **CPU Clock (%)**.
+- **Renderer**: `software` (default: inside the sandbox, the same on every
+  machine) or `opengl-hw`, Azahar's OpenGL renderer on the real GPU through
+  the bridge - many times faster, but the GPU's pictures reach the console's
+  memory, so a movie recorded with it replays only on the same driver.
 - **Motion Controls**: whether the accelerometer and gyroscope take input.
 
 ## Save data
