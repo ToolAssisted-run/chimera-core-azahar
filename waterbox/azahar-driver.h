@@ -20,6 +20,7 @@ struct Machine
   bool cpu_jit = true;
   int cpu_clock = 100;       // percent
   bool motion = false;       // the accelerometer and gyroscope take input
+  bool opengl = false;       // the OpenGL renderer through the GPU bridge (else software)
 };
 
 /// Boot. `rom` is the game's path in the machine's filesystem (see
@@ -30,6 +31,10 @@ void SetLogLevel(int level);  // Common::Log::Level; default Critical
 
 /// One frame: runs the machine to its next VBlank.
 void Frame();
+/// The engine loaded a state into the machine (the StateLoaded export).
+void StateLoaded();
+/// Which renderer is drawing: "software" or "opengl".
+const char* Renderer();
 bool InputWasRead();
 
 // The panel (see waterbox.config): buttons and axes, in wire order.

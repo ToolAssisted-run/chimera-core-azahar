@@ -24,6 +24,17 @@
 
 #include "gate-harness.h"
 
+#ifdef CHIMERA_GL_BRIDGE
+#include "gl-bridge.h"
+int chimera_gl_host_init(char *err, int errlen);
+const char *chimera_gl_host_description(void);
+uintptr_t chimera_gl_host_dispatch(uintptr_t op, uintptr_t a, uintptr_t b, uintptr_t c,
+                                   uintptr_t d, uintptr_t e);
+void chimera_gl_host_state_loaded(void);
+unsigned long chimera_gl_host_unhandled(long *last_op);
+#endif
+static int g_gpu;
+
 typedef struct { FILE *f; } freader;
 static intptr_t file_read(uintptr_t ud, uint8_t *d, uintptr_t s) { return (intptr_t)fread(d, 1, s, ((freader *)ud)->f); }
 typedef struct { uint8_t *b; size_t len, cap, pos; } membuf;
@@ -53,6 +64,7 @@ typedef int32_t (MB_GUEST_ABI *i32fn_i)(int32_t);
 typedef uintptr_t (MB_GUEST_ABI *ptrfn_i32)(int32_t);
 typedef int64_t (MB_GUEST_ABI *i64fn_i32)(int32_t);
 typedef uint64_t (MB_GUEST_ABI *u64fn)(void);
+typedef void (MB_GUEST_ABI *setfn_v)(uint64_t);
 
 static mb_host *g_host;
 static intfn g_Init;
@@ -127,6 +139,21 @@ static const char *core_domain_name(int i) { return (const char *)g_GetMemoryDom
 static const uint8_t *core_domain_ptr(int i) { return (const uint8_t *)g_GetMemoryDomainPtr(i); }
 static int64_t core_domain_size(int i) { return g_GetMemoryDomainSize(i); }
 
+/* What chimera's session does after a load: the host moves the context id
+ * (ce_gl_state_loaded) and the core is told (StateLoaded). Without it a load
+ * here is a strictly EASIER test than a load in Chimera. */
+static void state_loaded(void)
+{
+#ifdef CHIMERA_GL_BRIDGE
+	if (g_gpu)
+		chimera_gl_host_state_loaded();
+#endif
+	mb_return r;
+	wbx_get_proc_addr(g_host, "StateLoaded", &r);
+	if (r.data)
+		((void (MB_GUEST_ABI *)(void))r.data)();
+}
+
 static void core_pre_frame(void)
 {
 	const long frame = g_frameNo++;
@@ -154,6 +181,7 @@ static void core_pre_frame(void)
 		g_state.pos = 0;
 		wbx_load_state(g_host, mem_read, (uintptr_t)&g_state, &r);
 		if (r.error_message[0]) { fprintf(stderr, "load_state (session): %s\n", r.error_message); exit(1); }
+		state_loaded();
 		return;
 	}
 	if (!g_rerecord)
@@ -164,6 +192,7 @@ static void core_pre_frame(void)
 	g_state.pos = 0;
 	wbx_load_state(g_host, mem_read, (uintptr_t)&g_state, &r);
 	if (r.error_message[0]) { fprintf(stderr, "load_state: %s\n", r.error_message); exit(1); }
+	state_loaded();
 }
 
 /* the host: the core loaded, every file of the work dir mounted, activated */
@@ -213,6 +242,35 @@ static void build_host(void)
 	closedir(d);
 
 	wbx_activate_host(g_host, &r);
+
+#ifdef CHIMERA_GL_BRIDGE
+	/* The GPU bridge: CHIMERA_GPU=1 asks. Handed over BEFORE Init, where the
+	 * renderer is chosen; the context is made once per process. */
+	if (g_gpu)
+	{
+		static int made;
+		if (!made)
+		{
+			char glerr[256] = "";
+			if (chimera_gl_host_init(glerr, sizeof glerr) != 0)
+			{
+				fprintf(stderr, "gpu bridge: no context (%s); software rendering unaffected\n", glerr);
+				g_gpu = 0;
+				return;
+			}
+			fprintf(stderr, "gpu bridge: %s\n", chimera_gl_host_description());
+			made = 1;
+		}
+		mb_return gr;
+		wbx_get_proc_addr(g_host, "SetGpuBridge", &gr);
+		setfn_v set_bridge = (setfn_v)gr.data;
+		wbx_get_callback_addr(g_host, (mb_external_callback)chimera_gl_host_dispatch, 0, &gr);
+		if (!gr.data || !set_bridge)
+			fprintf(stderr, "gpu bridge: could not register the callback\n");
+		else
+			set_bridge((uint64_t)gr.data);
+	}
+#endif
 }
 
 static void resolve_exports(void)
@@ -252,6 +310,10 @@ int main(int argc, char **argv)
 	}
 	g_wbxPath = argv[1];
 	g_workdir = argv[2];
+	{
+		const char *want = getenv("CHIMERA_GPU");
+		g_gpu = want && strcmp(want, "0") != 0;
+	}
 	for (int i = 3; i < argc; i++)
 	{
 		if (!strcmp(argv[i], "--rerecord")) g_rerecord = 1;
@@ -308,6 +370,15 @@ int main(int argc, char **argv)
 	int ret = gate_run(&c, &o);
 	if (g_rerecord || g_session)
 		fprintf(stderr, "stateBytes=%zu\n", g_state.len);
+#ifdef CHIMERA_GL_BRIDGE
+	if (g_gpu)
+	{
+		long last = 0;
+		const unsigned long n = chimera_gl_host_unhandled(&last);
+		if (n)
+			fprintf(stderr, "gpu bridge: %lu call(s) to opcodes this host has no case for (last: opcode %ld)\n", n, last);
+	}
+#endif
 
 	wbx_deactivate_host(g_host, &r);
 	wbx_destroy_host(g_host, &r);

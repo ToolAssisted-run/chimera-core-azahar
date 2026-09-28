@@ -20,14 +20,23 @@ WBFLAGS := -fvisibility=hidden -mcmodel=large -mstack-protector-guard=global -fn
 SPECS   := -specs $(SR)/lib/musl-gcc.specs
 CXXINCS := -nostdinc++ -I$(SR)/include/c++/$(GCCVER) -I$(SR)/include/c++/$(GCCVER)/x86_64-linux-musl
 MBINCS  := -I$(MB)/extern/emulibc -I$(MB)/source/guest/include -I$(MB)/extern/jsmn
+GLINCS  := -I$(MB)/source/gl -I$(ROOT)/extern/azahar/externals/glad/include -Iglad/include -Igenerated-gl
 
-CXXFLAGS := $(WBFLAGS) $(TUFLAGS) -DCHIMERA_GUEST $(MBINCS) -I. $(CXXINCS)
+CXXFLAGS := $(WBFLAGS) $(TUFLAGS) -DCHIMERA_GUEST $(MBINCS) $(GLINCS) -I. $(CXXINCS)
 
-OBJS := $(O)/wbx-entry.o $(O)/azahar-driver.o $(O)/chimera-fs.o $(O)/zip-read.o $(O)/guest-syscalls.o
+OBJS := $(O)/wbx-entry.o $(O)/azahar-driver.o $(O)/chimera-fs.o $(O)/zip-read.o $(O)/guest-syscalls.o \
+        $(O)/gl-shim.o $(O)/gl-bridge-guest.o
 
 all: $(OBJS)
 
-$(O)/%.o: %.cpp azahar-driver.h chimera-fs-host.h zip-read.h
+$(O)/%.o: %.cpp azahar-driver.h chimera-fs-host.h zip-read.h gl-shim.h
+	@mkdir -p $(O)
+	g++ $(SPECS) $(CXXFLAGS) -c -o $@ $<
+
+# the generated wrappers assign glad's pointers by name: Azahar's own glad
+# (glad/glad.h, in the core library) defines them, and they are the ones the
+# renderer calls
+$(O)/gl-bridge-guest.o: generated-gl/gl-bridge-guest.cpp
 	@mkdir -p $(O)
 	g++ $(SPECS) $(CXXFLAGS) -c -o $@ $<
 

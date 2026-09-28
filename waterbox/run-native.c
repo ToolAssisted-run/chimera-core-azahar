@@ -15,6 +15,15 @@
 
 #include "gate-harness.h"
 
+#ifdef CHIMERA_GL_BRIDGE
+#include <string.h>
+int chimera_gl_host_init(char *err, int errlen);
+const char *chimera_gl_host_description(void);
+uintptr_t chimera_gl_host_dispatch(uintptr_t op, uintptr_t a, uintptr_t b, uintptr_t c,
+                                   uintptr_t d, uintptr_t e);
+void chimera_azahar_install_gpu_bridge(uint64_t addr);
+#endif
+
 extern int Init(void);
 extern const char *GetLoadError(void);
 extern void SetButton(int32_t index, int32_t state);
@@ -73,6 +82,24 @@ int main(int argc, char **argv)
 	struct gate_opts o;
 	if (!gate_parse_opts(argc, argv, 2, &o))
 		return 2;
+#ifdef CHIMERA_GL_BRIDGE
+	/* The GPU bridge, the same way the sandbox gets it: CHIMERA_GPU=1 asks,
+	 * the host half makes a headless context, and the machine's GL calls go
+	 * through the same generated wrappers and the same dispatcher as run-wbx's
+	 * - so the two flavors differ only by the sandbox. */
+	{
+		const char *want = getenv("CHIMERA_GPU");
+		if (want && strcmp(want, "0") != 0) {
+			char glerr[256] = "";
+			if (chimera_gl_host_init(glerr, sizeof glerr) != 0)
+				fprintf(stderr, "gpu bridge: no context (%s); software rendering unaffected\n", glerr);
+			else {
+				fprintf(stderr, "gpu bridge: %s\n", chimera_gl_host_description());
+				chimera_azahar_install_gpu_bridge((uint64_t)(uintptr_t)&chimera_gl_host_dispatch);
+			}
+		}
+	}
+#endif
 	struct gate_core c = {
 		.init = Init,
 		.load_error = GetLoadError,

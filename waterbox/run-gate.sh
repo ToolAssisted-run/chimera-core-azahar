@@ -380,5 +380,74 @@ else
 	report SKIP "the engine leg" "no drancia.cci, chimera-run or package"
 fi
 
+# ------------------------------------------------ 6. the GPU bridge (opengl-hw)
+# The OpenGL renderer through miniBox's GPU bridge, on the headless EGL context
+# the host half makes (Mesa's llvmpipe here, which is what makes the legs
+# repeatable on any machine). Both flavors go through the same generated
+# wrappers and dispatcher; they differ only by the sandbox.
+gpurun() { CHIMERA_GPU=1 "$@"; }
+for game in darkwitch.cci drancia.cci; do
+	name="${game%.*}"
+	if [ ! -f "$roms/$game" ]; then
+		report SKIP "$name: the GPU legs" "no $game in $roms"
+		continue
+	fi
+	g="$work/gl-$name"
+	workdir "$g" "$game" '{"renderer":"opengl-hw"}'
+	gpurun "$native" "$g" --frames 600 --report 30 --exercise > "$work/gl-$name.n" 2>"$work/gl-$name.ne" &
+	gpurun "$wbxrun" "$core" "$g" --frames 600 --report 30 --exercise > "$work/gl-$name.w" 2>"$work/gl-$name.we" &
+	# no bridge handed over: the same settings fall back to the software renderer
+	"$native" "$g" --frames 600 --report 30 --exercise > "$work/gl-$name.nobridge" 2>"$work/gl-$name.nbe" &
+	wait
+	pics="$(stream "$work/gl-$name.n" | awk '{print $7}' | sort -u | wc -l)"
+	if grep -q "^gpu bridge: .*Core Profile" "$work/gl-$name.we" && ! grep -q "software renderer" "$work/gl-$name.we" \
+		&& [ "$pics" -ge 3 ] && ! cmp -s "$work/gl-$name.n" "$work/$name.n"; then
+		report PASS "$name: the GPU draws it (opengl-hw)" "$pics pictures, and not the software renderer's stream"
+	else
+		report FAIL "$name: the GPU draws it (opengl-hw)" "$pics pictures; see build/gate/gl-$name.we"
+	fi
+	if [ -s "$work/gl-$name.n" ] && cmp -s "$work/gl-$name.n" "$work/gl-$name.w"; then
+		report PASS "$name: GPU native == sandbox (600 frames, exercised)"
+	else
+		report FAIL "$name: GPU native == sandbox (600 frames, exercised)" \
+			"first difference: $(diff "$work/gl-$name.n" "$work/gl-$name.w" 2>&1 | awk 'NR==2' | cut -c1-60)"
+	fi
+	if [ -s "$work/$name.n" ] && cmp -s "$work/gl-$name.nobridge" "$work/$name.n" && grep -q "no GPU bridge" "$work/gl-$name.nbe"; then
+		report PASS "$name: with no bridge, opengl-hw draws in software" "and says so"
+	else
+		report FAIL "$name: with no bridge, opengl-hw draws in software"
+	fi
+	# a load moves the context id (the host mints a new one, as chimera does):
+	# the renderer is thrown away and made again from the console's memory
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise > "$work/gl-$name.p" 2>/dev/null &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --rerecord > "$work/gl-$name.r" 2>"$work/gl-$name.re" &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --session > "$work/gl-$name.s" 2>"$work/gl-$name.se" &
+	wait
+	if [ -s "$work/gl-$name.p" ] && cmp -s "$work/gl-$name.p" "$work/gl-$name.r"; then
+		report PASS "$name: GPU: a rebuild after every frame's load changes nothing" "300 frames"
+	else
+		report FAIL "$name: GPU: a rebuild after every frame's load changes nothing"
+	fi
+	if [ -s "$work/gl-$name.p" ] && cmp -s "$work/gl-$name.p" "$work/gl-$name.s"; then
+		report PASS "$name: GPU: a state reopens in a new host and draws on"
+	else
+		report FAIL "$name: GPU: a state reopens in a new host and draws on"
+	fi
+	if grep -q "no case for" "$work/gl-$name.we" "$work/gl-$name.re" "$work/gl-$name.se"; then
+		report FAIL "$name: GPU: every call the renderer makes is answered" "$(grep -h 'no case for' "$work/gl-$name.we" "$work/gl-$name.re" | head -1)"
+	else
+		report PASS "$name: GPU: every call the renderer makes is answered"
+	fi
+done
+if [ -f "$roms/drancia.cci" ] && [ -x "$run" ] && [ -f "$pkg" ]; then
+	if "$run" "$pkg" "$roms/drancia.cci" "$work/engine.movie" --gpu --settings '{"renderer":"opengl-hw"}' \
+		--screenshot 759="$work/engine-gl.tga" > "$work/engine-gl.out" 2>&1 \
+		&& grep -q '^frames=760' "$work/engine-gl.out" && [ -s "$work/engine-gl.tga" ]; then
+		report PASS "drancia: 760 frames in the engine on the GPU" "$(grep -o 'Core Profile.*' "$work/engine-gl.out" | head -1 | cut -c1-40)"
+	else
+		report FAIL "drancia: 760 frames in the engine on the GPU" "see build/gate/engine-gl.out"
+	fi
+fi
+
 [ "$ran_any" -eq 1 ] || echo "no game in $roms: the machine legs were skipped (see the header of this script)"
 finish

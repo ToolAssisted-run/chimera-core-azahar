@@ -1,0 +1,137 @@
+diff --git a/src/video_core/renderer_opengl/gl_stream_buffer.h b/src/video_core/renderer_opengl/gl_stream_buffer.h
+index 78f724a..4fc433b 100644
+--- a/src/video_core/renderer_opengl/gl_stream_buffer.h
++++ b/src/video_core/renderer_opengl/gl_stream_buffer.h
+@@ -5,6 +5,7 @@
+ #pragma once
+ 
+ #include <tuple>
++#include <vector>
+ #include "video_core/renderer_opengl/gl_resource_manager.h"
+ 
+ namespace OpenGL {
+@@ -44,6 +45,10 @@ private:
+     GLintptr mapped_offset = 0;
+     GLsizeiptr mapped_size = 0;
+     u8* mapped_ptr = nullptr;
++#ifdef CHIMERA_CORE
++    // chimera: the bytes a Map hands out, in the machine's own memory (see the .cpp)
++    std::vector<u8> shadow;
++#endif
+ };
+ 
+ } // namespace OpenGL
+diff --git a/src/video_core/renderer_opengl/gl_stream_buffer.cpp b/src/video_core/renderer_opengl/gl_stream_buffer.cpp
+index b2c781f..a774cd3 100644
+--- a/src/video_core/renderer_opengl/gl_stream_buffer.cpp
++++ b/src/video_core/renderer_opengl/gl_stream_buffer.cpp
+@@ -24,6 +24,18 @@ OGLStreamBuffer::OGLStreamBuffer(Driver& driver, GLenum target, GLsizeiptr size,
+         allocate_size *= 2;
+     }
+ 
++#ifdef CHIMERA_CORE
++    // chimera: the GPU is on the other side of a sandbox wall (miniBox's GPU
++    // bridge), and a mapped buffer is a pointer into the DRIVER's memory, which
++    // the sandbox rightly will not let the machine touch. So the buffer keeps
++    // its bytes here and hands them over with glBufferSubData on Unmap - a copy
++    // the mapped path avoids, and the only shape that crosses the wall. The
++    // buffer is bound to its target around Map and Unmap, as upstream's
++    // non-persistent path already requires.
++    glBufferData(gl_target, allocate_size, nullptr, GL_STREAM_DRAW);
++    shadow.resize(static_cast<std::size_t>(buffer_size));
++    return;
++#endif
+     if (GLAD_GL_ARB_buffer_storage) {
+         persistent = true;
+         coherent = prefer_coherent;
+@@ -72,6 +84,14 @@ std::tuple<u8*, GLintptr, bool> OGLStreamBuffer::Map(GLsizeiptr size, GLintptr a
+         }
+     }
+ 
++#ifdef CHIMERA_CORE
++    if (invalidate) {
++        // orphan: what the GPU is still reading keeps its old storage
++        glBufferData(gl_target, buffer_size, nullptr, GL_STREAM_DRAW);
++    }
++    return std::make_tuple(shadow.data() + buffer_pos, buffer_pos, invalidate);
++#endif
++
+     if (invalidate || !persistent) {
+         MICROPROFILE_SCOPE(OpenGL_StreamBuffer);
+         GLbitfield flags = GL_MAP_WRITE_BIT | (persistent ? GL_MAP_PERSISTENT_BIT : 0) |
+@@ -88,6 +108,14 @@ std::tuple<u8*, GLintptr, bool> OGLStreamBuffer::Map(GLsizeiptr size, GLintptr a
+ void OGLStreamBuffer::Unmap(GLsizeiptr size) {
+     ASSERT(size <= mapped_size);
+ 
++#ifdef CHIMERA_CORE
++    if (size > 0) {
++        glBufferSubData(gl_target, buffer_pos, size, shadow.data() + buffer_pos);
++    }
++    buffer_pos += size;
++    return;
++#endif
++
+     if (!coherent && size > 0) {
+         glFlushMappedBufferRange(gl_target, buffer_pos - mapped_offset, size);
+     }
+diff --git a/src/video_core/renderer_opengl/renderer_opengl.cpp b/src/video_core/renderer_opengl/renderer_opengl.cpp
+index 09aad77..59adc14 100644
+--- a/src/video_core/renderer_opengl/renderer_opengl.cpp
++++ b/src/video_core/renderer_opengl/renderer_opengl.cpp
+@@ -113,7 +113,10 @@ void RendererOpenGL::SwapBuffers() {
+     PrepareRendertarget();
+     RenderScreenshot();
+     isSecondaryWindow = false;
+-#ifdef HAVE_LIBRETRO
++#if defined(HAVE_LIBRETRO) || defined(CHIMERA_CORE)
++    // chimera: as the libretro frontend does - the screens go straight into the
++    // framebuffer the window bound (SetupFramebuffer), which reads them back on
++    // SwapBuffers; no mailbox, no presentation thread
+     DrawScreens(render_window.GetFramebufferLayout(), false);
+     render_window.SwapBuffers();
+ #else
+diff --git a/src/video_core/renderer_opengl/gl_state.h b/src/video_core/renderer_opengl/gl_state.h
+index 21766db..b6896a0 100644
+--- a/src/video_core/renderer_opengl/gl_state.h
++++ b/src/video_core/renderer_opengl/gl_state.h
+@@ -161,6 +161,15 @@ public:
+     OpenGLState();
+ 
+     /// Get the currently active OpenGL state
++#ifdef CHIMERA_CORE
++    /// chimera: forget what the driver is believed to have bound. The belief is
++    /// a static in the machine's memory, so a savestate brings back the one it
++    /// had when the state was taken, while the driver holds whatever the frames
++    /// after it, or a fresh context, left. Every field then differs from any
++    /// real value, and the next Apply of any state makes every call.
++    static void ChimeraForget();
++#endif
++
+     static OpenGLState GetCurState() {
+         return cur_state;
+     }
+diff --git a/src/video_core/renderer_opengl/gl_state.cpp b/src/video_core/renderer_opengl/gl_state.cpp
+index 210dfcd..27bbd4f 100644
+--- a/src/video_core/renderer_opengl/gl_state.cpp
++++ b/src/video_core/renderer_opengl/gl_state.cpp
+@@ -2,6 +2,7 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the license.txt file included.
+ 
++#include <cstring>
+ #include "common/common_types.h"
+ #include "video_core/renderer_opengl/gl_state.h"
+ #include "video_core/renderer_opengl/gl_vars.h"
+@@ -92,6 +93,12 @@ OpenGLState::OpenGLState() {
+     renderbuffer = 0;
+ }
+ 
++#ifdef CHIMERA_CORE
++void OpenGLState::ChimeraForget() {
++    std::memset(static_cast<void*>(&cur_state), 0xFF, sizeof(cur_state));
++}
++#endif
++
+ void OpenGLState::Apply() const {
+     // Culling
+     if (cull.enabled != cur_state.cull.enabled) {

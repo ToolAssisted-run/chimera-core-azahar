@@ -18,6 +18,7 @@
 
 #include "azahar-driver.h"
 #include "chimera-fs-host.h"
+#include "gl-shim.h"
 #include "zip-read.h"
 
 namespace
@@ -158,6 +159,8 @@ ECL_EXPORT int Init(void)
     m.cpu_jit = strcmp(val, "interpreter") != 0;
   m.cpu_clock = static_cast<int>(wbx_setting_long("cpu_clock", 100));
   m.motion = wbx_setting_bool("motion", 0) != 0;
+  if (wbx_setting_str("renderer", val, sizeof val) > 0)
+    m.opengl = strcmp(val, "opengl-hw") == 0;
 
   if (!ChimeraAzahar::Init(m, romPath))
   {
@@ -205,6 +208,20 @@ ECL_EXPORT void SetAxis(int32_t index, int32_t value)
 ECL_EXPORT void FrameAdvance(uint64_t)
 {
   ChimeraAzahar::Frame();
+}
+
+// The GPU bridge (see gl-shim.cpp): the host hands its callback over BEFORE
+// Init, where the renderer is chosen.
+ECL_EXPORT void SetGpuBridge(uint64_t addr)
+{
+  chimera_azahar_install_gpu_bridge(addr);
+}
+
+// The engine calls this after every load of the machine, with the machine
+// stopped (see CheckGLContext in azahar-driver.cpp).
+ECL_EXPORT void StateLoaded(void)
+{
+  ChimeraAzahar::StateLoaded();
 }
 
 ECL_EXPORT int InputWasRead(void)

@@ -6,12 +6,14 @@
 #include "azahar-driver.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstring>
 #include <memory>
 #include <string>
 #include <tuple>
 
 #include "chimera-fs-host.h"
+#include "gl-shim.h"
 
 #include "audio_core/audio_types.h"
 #include "common/file_util.h"
@@ -30,7 +32,11 @@
 #include "core/hle/service/service.h"
 #include "core/loader/loader.h"
 #include "core/memory.h"
+#include <glad/glad.h>
 #include "video_core/gpu.h"
+#include "video_core/renderer_base.h"
+#include "video_core/renderer_opengl/gl_state.h"
+#include "video_core/rasterizer_interface.h"
 #include "video_core/renderer_software/renderer_software.h"
 
 namespace ChimeraAzahar
@@ -40,6 +46,8 @@ namespace
 std::string g_error;
 Machine g_machine;
 bool g_booted = false;
+bool g_gl = false;          // the OpenGL renderer, through the GPU bridge
+bool g_stateLoaded = false; // StateLoaded since the last frame (see CheckGLContext)
 bool g_frameDone = false;
 bool g_inputRead = false;
 
@@ -159,8 +167,66 @@ public:
   // Called at every VBlank (RendererBase::EndFrame): the frame is over.
   void PollEvents() override
   {
-    Compose();
+    if (!g_gl)
+      Compose();
     g_frameDone = true;
+  }
+
+  // ---- the OpenGL renderer (the GPU bridge) ----
+  // The renderer draws both screens, laid out, into whatever framebuffer this
+  // binds (patch 0014 takes the libretro frontend's path); SwapBuffers reads
+  // the picture back into the machine's own buffer.
+  void SetupFramebuffer() override
+  {
+    if (!g_gl)
+      return;
+    if (fbo == 0)
+    {
+      glGenRenderbuffers(1, &color);
+      glBindRenderbuffer(GL_RENDERBUFFER, color);
+      glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kW, kH);
+      glGenFramebuffers(1, &fbo);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+      glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color);
+    }
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  }
+
+  bool NeedsClearing() const override
+  {
+    return true;
+  }
+
+  void SwapBuffers() override
+  {
+    if (!g_gl || fbo == 0)
+      return;
+    static uint32_t rows[kW * kH];
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadPixels(0, 0, kW, kH, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, rows);
+    // GL's rows run bottom-up
+    for (int y = 0; y < kH; y++)
+      for (int x = 0; x < kW; x++)
+        g_video[y * kW + x] = rows[(kH - 1 - y) * kW + x] | 0xFF000000u;
+    // back to what the renderer's state cache believes is bound
+    const auto cur = OpenGL::OpenGLState::GetCurState();
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, cur.draw.read_framebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, cur.draw.draw_framebuffer);
+  }
+
+  // The framebuffer was made before the load: let it go (a name that means
+  // nothing in this context is ignored by glDelete*) and make it again on the
+  // next frame.
+  void ForgetGL()
+  {
+    if (fbo)
+      glDeleteFramebuffers(1, &fbo);
+    if (color)
+      glDeleteRenderbuffers(1, &color);
+    fbo = 0;
+    color = 0;
   }
 
   // The touch panel, from the Touch button and the two Touch axes. The axes
@@ -185,6 +251,7 @@ public:
 
 private:
   bool touching = false;
+  GLuint fbo = 0, color = 0;
 
   // One LCD's picture into its place in the stacked frame, `width` x 240.
   // ScreenInfo holds the LCD's portrait framebuffer; addressed as below it
@@ -257,7 +324,12 @@ void ApplyMachine(const Machine& m)
     v.lle_modules[service_module.name] = false;
   // Output: the software renderer (the GPU bridge is a later phase), no
   // frame limiter, the sound handed over as the DSP makes it.
-  v.graphics_api = Settings::GraphicsAPI::Software;
+  v.graphics_api = g_gl ? Settings::GraphicsAPI::OpenGL : Settings::GraphicsAPI::Software;
+  v.use_gles = false;
+  v.use_hw_shader = true;
+  v.shaders_accurate_mul = true;
+  v.use_shader_jit = true;
+  v.texture_filter = Settings::TextureFilter::NoFilter;
   v.frame_limit = 0;
   v.use_vsync = false;
   v.output_type = AudioCore::SinkType::Null;
@@ -313,6 +385,18 @@ bool Init(const Machine& m, const std::string& rom)
   g_machine = m;
   ResetInputs();
   FileUtil::SetUserPath("/user/");
+  // The OpenGL renderer draws through the GPU bridge a host handed over before
+  // Init; without one the machine keeps the software renderer, and says so.
+  g_gl = false;
+  if (m.opengl)
+  {
+    if (!ChimeraGL::Present())
+      fprintf(stderr, "[azahar] renderer opengl asked for, but no GPU bridge: software renderer\n");
+    else if (!ChimeraGL::Load())
+      fprintf(stderr, "[azahar] the GPU bridge could not load OpenGL: software renderer\n");
+    else
+      g_gl = true;
+  }
   ApplyMachine(m);
 
   Input::RegisterFactory<Input::ButtonDevice>("chimera", std::make_shared<ButtonFactory>());
@@ -388,11 +472,48 @@ bool Init(const Machine& m, const std::string& rom)
   return true;
 }
 
+// Before the machine steps: has the GL context under the renderer's objects
+// moved? Every object the OpenGL renderer holds is a NAME in the machine's
+// memory; a savestate brings back names of a context that is gone (another
+// process) or of objects the frames after the save have since changed (this
+// one, where the host mints a new id on every load). Between frames nothing is
+// mid-draw, so the whole renderer is thrown away and made again; its caches
+// fill back up from the console's memory, which holds everything the GPU drew
+// because every frame ends with a flush (below). The remembered id lives in the
+// machine's memory like the names, and a stored 0 cannot vouch for anything once
+// a state has been loaded (chimera issue 126, the Dolphin note).
+uint64_t g_glContext = 0;
+
+void CheckGLContext()
+{
+  const bool afterLoad = g_stateLoaded;
+  g_stateLoaded = false;
+  const uint64_t live = ChimeraGL::ContextId();
+  if (live == 0)
+    return;
+  if (live != g_glContext && (g_glContext != 0 || afterLoad))
+  {
+    // what the driver has bound is unknown: every Apply from here makes every call
+    OpenGL::OpenGLState::ChimeraForget();
+    g_window->ForgetGL();
+    auto& system = Core::System::GetInstance();
+    system.GPU().RecreateRenderer(*g_window, nullptr);
+    // A fresh rasterizer has no shader manager until a title switch or a disk
+    // cache load makes one; the running title will not switch again, so one is
+    // made here (the disk cache itself is off: nothing is read)
+    std::atomic_bool stop{false};
+    system.GPU().Renderer().Rasterizer()->LoadDefaultDiskResources(stop, nullptr);
+  }
+  g_glContext = live;
+}
+
 void Frame()
 {
   if (!g_booted)
     return;
   auto& system = Core::System::GetInstance();
+  if (g_gl)
+    CheckGLContext();
   g_audio.clear();
   g_inputRead = false;
   g_frameDone = false;
@@ -407,6 +528,22 @@ void Frame()
       break;
     }
   }
+  // Everything the GPU drew goes back into the console's memory now, so a
+  // savestate taken between frames holds it: a state loaded later rebuilds the
+  // renderer from that memory, and must find what a run that never stopped
+  // would have.
+  if (g_gl)
+    system.GPU().Renderer().Rasterizer()->FlushAll();
+}
+
+void StateLoaded()
+{
+  g_stateLoaded = true;
+}
+
+const char* Renderer()
+{
+  return g_gl ? "opengl" : "software";
 }
 
 bool InputWasRead()
