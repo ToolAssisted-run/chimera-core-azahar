@@ -19,7 +19,7 @@ behind it (2026-09-27) recommended going ahead on four conditions, all kept:
 | 1 | the driver: boot, frames, the machine's own filesystem, pinned settings, native == sandbox | done |
 | 2 | commercial games, the keys slot, save data in and out, touch, motion, lag | done (motion unproven on a game) |
 | - | the software-renderer gate | done: waterbox/run-gate.sh, 50 passed / 0 failed with the four test games; 3 passed / 8 skipped with none |
-| 3 | the GPU bridge (OpenGL through Chimera's bridge) | NOT STARTED |
+| 3 | the GPU bridge (OpenGL through Chimera's bridge) | done: Mesa llvmpipe in the gate, and a GTX 1060 on Windows (2026-09-28) |
 | 4 | CI, the roster, a release | not started (needs the user) |
 
 ## How it is built
@@ -86,6 +86,51 @@ fail: an idle run for the input legs, the top screen for touch, the default
 spelled out for the clock, a scrambled ExeFS for the encryption check, and
 MALLOC_PERTURB_ for the host heap (that leg found patch 0013). About 22
 minutes on this machine; the sandbox runs about half native speed.
+
+## The GPU bridge (renderer: opengl-hw)
+
+Azahar's OpenGL renderer draws on a real GPU outside the sandbox through
+miniBox's bridge (`waterbox/gl-shim.cpp`, the generated
+`generated-gl/`, `gl-entry-points.txt`). What it took:
+
+- **No mapped buffers** (patch 0014): the stream buffers keep their bytes in
+  the machine's memory and hand them over with `glBufferSubData`.
+- **The picture**: the screens go straight into a framebuffer the window binds
+  (the libretro path), read back on `SwapBuffers`.
+- **The GPU's pictures belong in the console's memory at every frame's end**:
+  the driver calls the rasterizer's `FlushAll`, so a savestate taken between
+  frames holds everything the GPU drew.
+- **A load moves the context**: every load (chimera's host mints a new
+  context id), and every state opened in a new process, makes the driver
+  throw the renderer away and make it again (`GPU::RecreateRenderer`, a
+  shader manager for the running title, and `OpenGLState::ChimeraForget`
+  because the state cache's belief is a static the load brought back). The
+  caches refill from the console's memory. A run loaded around every frame,
+  or into a new host, is byte-identical to one that never stopped.
+
+Open on the GPU side:
+
+- **On a real GPU (GTX 1060, Windows, NVIDIA 581.42, chimera-run --gpu,
+  2026-09-28):** all four test games draw correctly through 1800 frames
+  (Dark Witch, Drancia Saga, Mario & Luigi, Cars 2). On Dark Witch:
+  - 20 state loads in one session: the pictures at 1200 and 1500 are
+    byte-identical to a run that never loaded.
+  - 30 seeks back to frame 1500 (`--rewind-loop 1500,30`): the last frame
+    is byte-identical to a straight run's.
+  - A state saved in one process and opened in another: the last frame is
+    byte-identical too.
+  A straight run's `--final-screenshot` is an undrawn buffer (blank); compare
+  against `--screenshot <last frame>` instead.
+- **Could a same-session load leak what the frames after the save created?**
+  The reasoning: the host keeps one context and mints a new id, and objects
+  the dropped renderer made and nobody names any more would stay in the
+  driver. NOT OBSERVED on the 1060: over the 30 seeks above (each replaying
+  300 frames), the process's GPU dedicated memory stayed between 54 and
+  89 MB and ended at 54 MB, and private memory settled at about 640 MB.
+  Worth re-measuring over thousands of loads before calling it closed.
+- Internal resolution above 1x is not offered (the picture is 400x480).
+- The GPU's pictures reach the console's memory, so under opengl-hw the
+  machine itself depends on the driver: a movie replays on the same driver.
 
 ## Lag
 
