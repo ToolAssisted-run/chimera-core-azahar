@@ -15,19 +15,31 @@ out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__fi
 BUTTONS = ["A", "B", "X", "Y", "Up", "Down", "Left", "Right", "L", "R", "Start", "Select",
            "ZL", "ZR", "Touch"]
 
+# The letter each button writes into a movie's text and heads its input column
+# with. The frontend keeps no table of these: a core says what its own controls
+# are called. (An entry is read by position, so a letter may change and no
+# movie made before it is harmed.)
+MNEMONICS = {
+    "A": "A", "B": "B", "X": "X", "Y": "Y", "Up": "U", "Down": "D", "Left": "L", "Right": "R",
+    "L": "l", "R": "r", "Start": "S", "Select": "s", "ZL": "[", "ZR": "]", "Touch": "T",
+}
+assert sorted(MNEMONICS) == sorted(BUTTONS), "every button has a letter, and nothing else does"
+assert len(set(MNEMONICS.values())) == len(MNEMONICS), "and no two share one"
+
+# name, least, most, at rest, and the header of its input column
 AXES = [
-    ("Circle Pad X", -128, 127, 0),
-    ("Circle Pad Y", -128, 127, 0),
-    ("C-Stick X", -128, 127, 0),
-    ("C-Stick Y", -128, 127, 0),
-    ("Touch X", 0, 65535, 32768),
-    ("Touch Y", 0, 65535, 32768),
-    ("Accel X", -4000, 4000, 0),
-    ("Accel Y", -4000, 4000, 0),
-    ("Accel Z", -4000, 4000, -1000),
-    ("Gyro X", -20000, 20000, 0),
-    ("Gyro Y", -20000, 20000, 0),
-    ("Gyro Z", -20000, 20000, 0),
+    ("Circle Pad X", -128, 127, 0, "CPX"),
+    ("Circle Pad Y", -128, 127, 0, "CPY"),
+    ("C-Stick X", -128, 127, 0, "CSX"),
+    ("C-Stick Y", -128, 127, 0, "CSY"),
+    ("Touch X", 0, 65535, 32768, "TX"),
+    ("Touch Y", 0, 65535, 32768, "TY"),
+    ("Accel X", -4000, 4000, 0, "AX"),
+    ("Accel Y", -4000, 4000, 0, "AY"),
+    ("Accel Z", -4000, 4000, -1000, "AZ"),
+    ("Gyro X", -20000, 20000, 0, "GX"),
+    ("Gyro Y", -20000, 20000, 0, "GY"),
+    ("Gyro Z", -20000, 20000, 0, "GZ"),
 ]
 
 INPUT_NAME = "Nintendo 3DS"
@@ -37,6 +49,8 @@ GAME_FORMATS = ["3ds", "cci", "cxi", "app", "3dsx", "elf"]
 config = {
     "coreName": "Azahar",
     "systemId": "3DS",
+    # what the system is called in front of a person: the core's word for it
+    "systemNames": {"3DS": "Nintendo 3DS"},
     "author": "The Citra and Azahar teams; chimera port by Sergio Martin",
     "url": "https://github.com/ToolAssisted-run/chimera-core-azahar",
     "romFile": "game",
@@ -69,7 +83,9 @@ config = {
         "name": INPUT_NAME,
         "_comment": "The console's controls. The ZL and ZR buttons and the C-Stick are a New 3DS's and leave the input roll on an old one. The Circle Pad and C-Stick run -128..127 with up and right positive. The touch screen is the Touch button plus a point on the WHOLE stacked picture (Touch X/Y, 0..65535 across its 400 columns and down its 480 rows, as every absolute position in Chimera is): a point on the bottom screen touches it, anywhere else touches nothing. The accelerometer (thousandths of a g, resting at -1000 on Z) and gyroscope (tenths of a degree a second) take input only when the Motion setting is on.",
         "buttons": BUTTONS,
-        "axes": [{"name": n, "min": lo, "max": hi, "neutral": mid} for n, lo, hi, mid in AXES],
+        "mnemonics": MNEMONICS,
+        "axes": [{"name": n, "min": lo, "max": hi, "neutral": mid, "header": head}
+                 for n, lo, hi, mid, head in AXES],
     },
     "settings": [
         {
