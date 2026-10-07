@@ -21,6 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 This licence covers this repository's own files (waterbox/, meson.build, the
-build and gate scripts, docs/). The emulator it builds, FinalBurn Neo
-(extern/FBNeo), is under its own licence - see extern/FBNeo/src/license.txt -
+build and gate scripts, docs/). The emulator it builds, Azahar
+(extern/azahar), is under its own licence - see extern/azahar/license.txt -
 and the built core is subject to it.

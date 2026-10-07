@@ -47,11 +47,23 @@ Export Save Data writes the SD card's files (`sdmc/Nintendo 3DS/...`: the
 game's save archive and extra data); the project's Save data slot takes that
 .zip back, and the game starts from it.
 
+## Using it in Chimera
+
+Chimera includes no cores and downloads none. Download the `.chimeraCore`
+file from this repository's
+[Releases](https://github.com/ToolAssisted-run/chimera-core-azahar/releases)
+page, or build it, and put it in the `Cores` folder beside `Chimera.exe`.
+File > Core Manager lists what is in that folder. The same file works on
+Linux and on Windows.
+
 ## Building
 
-See `docs/PLAN.md` for the submodules and the build, and
-`waterbox/run-gate.sh` for the gate. The machine legs need decrypted games in
-`tests/roms-local` (never committed).
+`waterbox/build-package.sh -r <chimera checkout>` builds
+`azahar.chimeraCore` into that checkout's `build/Cores`.
+[docs/BUILDING.md](docs/BUILDING.md) has every step, and
+[AGENTS.md](AGENTS.md) is the guide for an AI coding agent. See
+`docs/PLAN.md` for the design, and `waterbox/run-gate.sh` for the gate. The
+machine legs need decrypted games in `tests/roms-local` (never committed).
 
 ## Licence
 
