@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <emulibc.h>
+#include <initializer_list>
+
 #include <waterbox_settings.h>
 #include <waterbox_slots.h>
 
@@ -45,6 +47,33 @@ int RegionOf(const char* s)
     if (!strcmp(s, names[i]))
       return i;
   return -1;
+}
+
+// Which of `names` a setting's value is, or -1.
+int OneOf(const char* s, std::initializer_list<const char*> names)
+{
+  int i = 0;
+  for (const char* name : names)
+  {
+    if (!strcmp(s, name))
+      return i;
+    i++;
+  }
+  return -1;
+}
+
+// Init's answer to a setting it cannot honour.
+int Refuse(const char* format, const char* value)
+{
+  snprintf(g_loadError, sizeof g_loadError, format, value);
+  return 0;
+}
+
+// The picture and its readback rows are remade every frame from the machine:
+// they live where no savestate looks.
+uint32_t* PictureMemory(size_t pixels)
+{
+  return static_cast<uint32_t*>(alloc_invisible(pixels * sizeof(uint32_t)));
 }
 
 std::vector<ChimeraAzahar::SaveFile> g_saves;
@@ -148,6 +177,7 @@ ECL_EXPORT int Init(void)
     }
   }
 
+  ChimeraAzahar::VideoMemory = PictureMemory;
   ChimeraAzahar::Machine m;
   char val[64];
   if (wbx_setting_str("model", val, sizeof val) > 0)
@@ -161,6 +191,23 @@ ECL_EXPORT int Init(void)
   m.motion = wbx_setting_bool("motion", 0) != 0;
   if (wbx_setting_str("renderer", val, sizeof val) > 0)
     m.opengl = strcmp(val, "opengl-hw") == 0;
+  {
+    char name[64];
+    if (wbx_setting_str("username", name, sizeof name) > 0)
+      m.username = name;
+  }
+  // The picture. A value this build does not know is an error rather than a
+  // default: a project that asks for a layout gets that layout or is told.
+  if (wbx_setting_str("layout", val, sizeof val) > 0)
+  {
+    m.layout = OneOf(val, {"stacked", "single", "large", "side-by-side"});
+    if (m.layout < 0)
+      return Refuse("no such screen layout: %s", val);
+  }
+  m.swap_screens = wbx_setting_bool("swap_screens", 0) != 0;
+  m.upright = wbx_setting_bool("upright", 0) != 0;
+  m.large_proportion = static_cast<int>(wbx_setting_long("large_screen_proportion", 4));
+  m.linear_filter = wbx_setting_bool("linear_filter", 1) != 0;
 
   if (!ChimeraAzahar::Init(m, romPath))
   {

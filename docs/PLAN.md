@@ -128,9 +128,98 @@ Open on the GPU side:
   300 frames), the process's GPU dedicated memory stayed between 54 and
   89 MB and ended at 54 MB, and private memory settled at about 640 MB.
   Worth re-measuring over thousands of loads before calling it closed.
-- Internal resolution above 1x is not offered (the picture is 400x480).
+- Internal resolution above 1x is not offered, and since chimera#223 the
+  reason is measured: see "The picture's settings" below.
 - The GPU's pictures reach the console's memory, so under opengl-hw the
   machine itself depends on the driver: a movie replays on the same driver.
+
+## The picture's settings, and the user name (user-decided, 2026-10-09, chimera#223)
+
+Asked for: every graphics option BizHawk's 3DS core has, the screen layout
+changeable while a game runs, and the user name. The owner took internal
+resolution, the screen layout, the user name, and "the texture filter and
+other picture options, each only if the machine's memory is unchanged";
+asked how a layout would change in an open project, he chose a normal
+setting over a new way to change one live - changing it restarts the
+machine and clears the greenzone like any other.
+
+**The layout** is Azahar's own. `Screen Layout` (stacked, single, large,
+side-by-side), `Swap Screens`, `Upright Screens` and `Large Screen
+Proportion` set Azahar's layout settings; the picture's size is
+`GetMinimumSizeFromLayout`, fixed at Init, and the window's
+layout comes from `UpdateCurrentFramebufferLayout` as in any Azahar
+frontend. The OpenGL renderer draws into it. The software renderer has no
+presentation of its own, so the adapter puts each LCD into the rectangle
+the layout gives it - the nearest pixel where a screen is not at its own
+size, turned a quarter when upright - and the two renderers' pictures were
+compared by eye in the stacked, large and upright layouts. The package
+declares no virtual size any more: a 3DS's pixels are square and the
+picture is its own shape, 720x240 side by side.
+
+**A touch** is still a place in the picture, and Azahar maps it through the
+layout. So the layout is the picture only, with one consequence the
+declaration states: a movie that touches wants the layout it was made
+with. The gate touches the same point of the bottom screen stacked and side
+by side - (200, 333) of 400x480 and (560, 93) of 720x240 - and the machine
+comes out the same.
+
+**What was measured, and what it decided** (Dark Witch, 900 frames, OpenGL
+on llvmpipe; RAM digest against 1x stacked):
+
+| setting | RAM | picture | so |
+|---|---|---|---|
+| large, large + swap, side-by-side | same | differs | the picture only |
+| linear filtering off (large + swap) | same | differs | the picture only |
+| internal resolution 2x | DIFFERS | 800x960 | not offered: see below |
+| texture filter xBRZ (at 2x) | DIFFERS from 2x | differs | not offered |
+| texture sampling "linear" | DIFFERS, at 1x and 2x | - | not offered |
+| texture sampling "nearest" | same | same | (nothing to offer alone) |
+
+Internal resolution changes memory because of how this core holds the GPU's
+pictures: every frame ends by writing them into the console's memory at the
+console's size, and what comes down from a 2x drawing is not what a 1x
+drawing leaves. That alone would make it a setting of the machine, declared
+as one. What rules it out is the other thing the gate said at 2x: native and
+sandbox agreed, a state reopened in a new host agreed, and **a load around
+every frame did not** - the renderer is made again from the console's
+memory after a load, that memory holds the pictures at the console's size,
+and the frames drawn on from there are not the frames a run that never
+loaded draws. At 1x the round trip is exact, which is the whole of how this
+core's GPU states work. A tool that rewinds cannot offer a resolution a
+rewind changes the run at, so the drawing path takes a scale (`Machine::
+scale`, `kMaxScale`) and nothing sets it. What it would take is what the
+other GPU cores got in chimera#190: a state that holds the larger pictures.
+The texture filter and the forced sampling fail the owner's test and stay
+off.
+
+On the GTX 1060 (Cars 2, 1300 frames, the engine's Windows build): FCRAM
+is the same file stacked, large and swapped, and large and swapped with
+linear filtering off; the small screen is visibly sharper with the filter
+off; and in the side-by-side layout the frames drawn after a state load are
+the pictures they were (0.00% of pixels, 720x240).
+
+**Not taken:** Azahar's stereoscopic options and 3D intensity - the
+intensity is the console's 3D slider, which Azahar writes into the shared
+page and the pad state games read (shared_page.cpp, hid.cpp), and the
+render options show nothing without it; the background colour and the
+custom layout (no colour or rectangle setting to declare them with).
+
+**The user name** is the console's own setting (`cfg`'s user name block,
+written before anything runs and saved to the NAND as the settings menu
+would): one to ten characters, empty for Azahar's AZAHAR. Cars 2 reads it -
+another name changes that game's RAM, the default spelled out does not.
+
+The picture and the readback's rows live in invisible memory now: they are
+remade every frame, which is nothing a state should carry.
+
+**What the gate had been letting through.** Adding these legs showed the
+savestate legs passing on a sandbox that never started: the runner's memory
+layout had fallen behind the package's for an hour, every sandboxed run died
+at Init, and "save+load around every frame changes nothing" compared two
+equally empty outputs and said PASS. Every comparison of two runs now asks
+first that the run reported a frame (`alive`), and compares the frames
+reported and not the files (`same`) - the sandbox's host says a line of its
+own on the same descriptor when invisible memory is first used.
 
 ## Lag
 

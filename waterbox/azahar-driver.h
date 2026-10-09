@@ -21,7 +21,44 @@ struct Machine
   int cpu_clock = 100;       // percent
   bool motion = false;       // the accelerometer and gyroscope take input
   bool opengl = false;       // the OpenGL renderer through the GPU bridge (else software)
+  // The console's user name, as its settings menu would hold it: games read
+  // it (a save's owner, a greeting). Empty: Azahar's own ("AZAHAR"). Ten
+  // characters at most, as the console allows.
+  std::string username;
+
+  // How many times the console's own resolution the OpenGL renderer draws
+  // at. NOT OFFERED (kMaxScale is 1, and no setting reaches this): measured
+  // at 2x, each frame's pictures come back into the console's memory brought
+  // down from the larger drawing - other bytes than a 1x frame leaves - and,
+  // worse, a state loaded at 2x does not give the run back: the renderer is
+  // made again from the console's memory, which holds the pictures at the
+  // console's size, so the frames after a load are not the frames a run
+  // without one draws (docs/PLAN.md). The drawing path takes any scale; what
+  // is missing is a state that holds the larger pictures.
+  int scale = 1;
+
+  // ---- the picture: none of these is the machine (the gate holds each to
+  // that: the RAM the same at every value, under both renderers) ----
+  // How the two screens are put into one picture (Azahar's layouts):
+  // 0 stacked, the top one above the bottom; 1 one screen only; 2 one large
+  // and one small beside it; 3 side by side.
+  int layout = 0;
+  bool swap_screens = false;     // the bottom screen takes the top one's place
+  bool upright = false;          // the console turned on its side
+  int large_proportion = 4;      // layout 2: how many times larger the large screen is
+  bool linear_filter = true;     // the screens are scaled into the picture with a linear filter (OpenGL)
 };
+
+// The largest picture any of the above makes, a side: two screens side by
+// side at the highest scale.
+constexpr int kMaxScale = 1;
+constexpr int kMaxSide = (400 + 320) * kMaxScale;
+
+/// Where the picture and its scratch row buffer live: `pixels` 32-bit pixels
+/// each. Set before Init by a host that has somewhere better than the heap -
+/// the sandbox keeps them out of every savestate (they are remade every
+/// frame). Null: the heap.
+extern uint32_t* (*VideoMemory)(size_t pixels);
 
 /// Boot. `rom` is the game's path in the machine's filesystem (see
 /// chimera-fs-host.h). Returns false with Error() set.
@@ -45,7 +82,7 @@ bool AxisActive(int i);
 void SetButton(int i, bool on);
 void SetAxis(int i, int32_t value);
 
-const uint32_t* Video(int* w, int* h);  // BGRA, the two screens stacked: 400x480
+const uint32_t* Video(int* w, int* h);  // BGRA, the screens as the layout puts them; 400x480 by default
 const int16_t* Audio(int* frames);      // stereo pairs at 32728 Hz, this frame's
 
 struct Domain

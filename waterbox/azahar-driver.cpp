@@ -22,10 +22,13 @@
 #include "common/vector_math.h"
 #include "core/3ds.h"
 #include "core/core.h"
+#include "common/string_util.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/emu_window.h"
+#include "core/frontend/framebuffer_layout.h"
 #include "core/frontend/image_interface.h"
 #include "core/frontend/input.h"
+#include "core/hle/service/cfg/cfg.h"
 #include "core/hle/kernel/config_mem.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/shared_page.h"
@@ -54,10 +57,13 @@ bool g_inputRead = false;
 bool g_buttons[kButtons];
 int32_t g_axes[kAxes];
 
-constexpr int kW = Core::kScreenTopWidth;                                   // 400
-constexpr int kH = Core::kScreenTopHeight + Core::kScreenBottomHeight;      // 480
-constexpr int kBottomX = (Core::kScreenTopWidth - Core::kScreenBottomWidth) / 2;  // 40
-uint32_t g_video[kW * kH];
+// The picture: its size is the layout's own smallest (Azahar's
+// GetMinimumSizeFromLayout - 400x480 for the two screens stacked) times the
+// scale, fixed at Init.
+int g_w = Core::kScreenTopWidth;
+int g_h = Core::kScreenTopHeight + Core::kScreenBottomHeight;
+uint32_t* g_video = nullptr;  // g_w * g_h
+uint32_t* g_rows = nullptr;   // the same again: glReadPixels' bottom-up rows
 std::vector<int16_t> g_audio;
 
 // Wire order of the panel's axes.
@@ -162,7 +168,7 @@ public:
 class Window final : public Frontend::EmuWindow
 {
 public:
-  Window() { UpdateCurrentFramebufferLayout(kW, kH); }
+  Window() { UpdateCurrentFramebufferLayout(g_w, g_h); }
 
   // Called at every VBlank (RendererBase::EndFrame): the frame is over.
   void PollEvents() override
@@ -184,7 +190,7 @@ public:
     {
       glGenRenderbuffers(1, &color);
       glBindRenderbuffer(GL_RENDERBUFFER, color);
-      glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kW, kH);
+      glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, g_w, g_h);
       glGenFramebuffers(1, &fbo);
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
       glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color);
@@ -201,15 +207,18 @@ public:
   {
     if (!g_gl || fbo == 0)
       return;
-    static uint32_t rows[kW * kH];
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    glReadPixels(0, 0, kW, kH, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, rows);
+    glReadPixels(0, 0, g_w, g_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, g_rows);
     // GL's rows run bottom-up
-    for (int y = 0; y < kH; y++)
-      for (int x = 0; x < kW; x++)
-        g_video[y * kW + x] = rows[(kH - 1 - y) * kW + x] | 0xFF000000u;
+    for (int y = 0; y < g_h; y++)
+    {
+      const uint32_t* from = g_rows + static_cast<size_t>(g_h - 1 - y) * g_w;
+      uint32_t* to = g_video + static_cast<size_t>(y) * g_w;
+      for (int x = 0; x < g_w; x++)
+        to[x] = from[x] | 0xFF000000u;
+    }
     // back to what the renderer's state cache believes is bound
     const auto cur = OpenGL::OpenGLState::GetCurState();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, cur.draw.read_framebuffer);
@@ -236,8 +245,8 @@ public:
   void ApplyTouch()
   {
     const bool down = g_buttons[kTouchButton];
-    const unsigned x = static_cast<unsigned>(std::clamp(g_axes[kTouchX], 0, 65535)) * kW / 65536;
-    const unsigned y = static_cast<unsigned>(std::clamp(g_axes[kTouchY], 0, 65535)) * kH / 65536;
+    const unsigned x = static_cast<unsigned>(std::clamp(g_axes[kTouchX], 0, 65535)) * g_w / 65536;
+    const unsigned y = static_cast<unsigned>(std::clamp(g_axes[kTouchY], 0, 65535)) * g_h / 65536;
     if (down && touching)
       TouchMoved(x, y);
     else if (down)
@@ -253,28 +262,49 @@ private:
   bool touching = false;
   GLuint fbo = 0, color = 0;
 
-  // One LCD's picture into its place in the stacked frame, `width` x 240.
+  // One LCD's picture into its place in the frame - the rectangle Azahar's
+  // layout gives that screen, which is the LCD's own size when the two are
+  // stacked or side by side and anything else when one is large and one small.
   // ScreenInfo holds the LCD's portrait framebuffer; addressed as below it
-  // reads out landscape (see citra_libretro's blit). A top screen in the 800
-  // pixel "wide" mode some 2D games use is twice as wide as its place: each
-  // pair of its pixels is averaged into one.
-  static void Blit(const SwRenderer::ScreenInfo& info, int left, int top, u32 width)
+  // reads out landscape (see citra_libretro's blit), `lcdWidth` x 240. A top
+  // screen in the 800 pixel "wide" mode some 2D games use is twice as wide as
+  // that: each pair of its pixels is averaged into one. A rectangle of another
+  // size takes the nearest of the LCD's pixels; `upright` is the console
+  // turned on its side, the rectangle 240 wide for a screen 240 high.
+  static void Blit(const SwRenderer::ScreenInfo& info, const Common::Rectangle<u32>& to,
+                   u32 lcdWidth, bool upright)
   {
     const u32 w = info.height, h = std::min<u32>(info.width, Core::kScreenTopHeight);
-    if (w == 0 || info.pixels.size() < static_cast<size_t>(w) * info.width * 4)
+    if (w == 0 || h == 0 || info.pixels.size() < static_cast<size_t>(w) * info.width * 4)
       return;
-    const u32 step = w > width ? w / width : 1;
-    const u32 cols = std::min(width, w / step);
-    for (u32 y = 0; y < h; y++)
+    const u32 step = w > lcdWidth ? w / lcdWidth : 1;
+    const u32 cols = std::min(lcdWidth, w / step);
+    const u32 rw = std::min<u32>(to.GetWidth(), g_w - std::min<u32>(to.left, g_w));
+    const u32 rh = std::min<u32>(to.GetHeight(), g_h - std::min<u32>(to.top, g_h));
+    const u32 fw = to.GetWidth(), fh = to.GetHeight();
+    if (cols == 0 || fw == 0 || fh == 0)
+      return;
+    for (u32 y = 0; y < rh; y++)
     {
-      uint32_t* dst = g_video + static_cast<size_t>(top + y) * kW + left;
-      const u8* row = info.pixels.data() + static_cast<size_t>(y) * w * 4;
-      for (u32 x = 0; x < cols; x++)
+      uint32_t* dst = g_video + static_cast<size_t>(to.top + y) * g_w + to.left;
+      for (u32 x = 0; x < rw; x++)
       {
-        u32 r = 0, g = 0, b = 0;
-        for (u32 k = 0; k < step; k++)
+        // the LCD's pixel under this one
+        u32 sx, sy;
+        if (!upright)
         {
-          const u8* src = row + static_cast<size_t>(x * step + k) * 4;
+          sx = x * cols / fw;
+          sy = y * h / fh;
+        }
+        else
+        {
+          sx = (fh - 1 - y) * cols / fh;
+          sy = x * h / fw;
+        }
+        const u8* src = info.pixels.data() + (static_cast<size_t>(sy) * w + sx * step) * 4;
+        u32 r = 0, g = 0, b = 0;
+        for (u32 k = 0; k < step; k++, src += 4)
+        {
           r += src[0];
           g += src[1];
           b += src[2];
@@ -284,13 +314,17 @@ private:
     }
   }
 
-  static void Compose()
+  void Compose()
   {
-    std::fill(std::begin(g_video), std::end(g_video), 0xFF000000u);
+    std::fill(g_video, g_video + static_cast<size_t>(g_w) * g_h, 0xFF000000u);
     auto& r = static_cast<SwRenderer::RendererSoftware&>(Core::System::GetInstance().GPU().Renderer());
-    Blit(r.Screen(VideoCore::ScreenId::TopLeft), 0, 0, Core::kScreenTopWidth);
-    Blit(r.Screen(VideoCore::ScreenId::Bottom), kBottomX, Core::kScreenTopHeight,
-         Core::kScreenBottomWidth);
+    const Layout::FramebufferLayout& layout = GetFramebufferLayout();
+    const bool upright = !layout.is_rotated;
+    if (layout.top_screen_enabled)
+      Blit(r.Screen(VideoCore::ScreenId::TopLeft), layout.top_screen, Core::kScreenTopWidth, upright);
+    if (layout.bottom_screen_enabled)
+      Blit(r.Screen(VideoCore::ScreenId::Bottom), layout.bottom_screen, Core::kScreenBottomWidth,
+           upright);
   }
 };
 
@@ -329,17 +363,33 @@ void ApplyMachine(const Machine& m)
   v.use_hw_shader = true;
   v.shaders_accurate_mul = true;
   v.use_shader_jit = true;
+  // Azahar's texture filters and its forced texture sampling are not offered:
+  // each changes what a frame leaves in the console's memory (measured, see
+  // docs/PLAN.md), and nothing here may do that unasked.
   v.texture_filter = Settings::TextureFilter::NoFilter;
+  v.texture_sampling = Settings::TextureSampling::GameControlled;
+  v.filter_mode = m.linear_filter;
   v.frame_limit = 0;
   v.use_vsync = false;
   v.output_type = AudioCore::SinkType::Null;
   v.input_type = AudioCore::InputType::Null;
   v.enable_audio_stretching = false;
   v.audio_emulation = Settings::AudioEmulation::HLE;
-  v.layout_option = Settings::LayoutOption::Default;
-  v.swap_screen = false;
-  v.upright_screen = false;
-  v.resolution_factor = 1;
+  // The picture's shape: Azahar's own layouts, at the size each one asks for.
+  static const Settings::LayoutOption layouts[] = {
+      Settings::LayoutOption::Default, Settings::LayoutOption::SingleScreen,
+      Settings::LayoutOption::LargeScreen, Settings::LayoutOption::SideScreen};
+  v.layout_option = layouts[std::clamp(m.layout, 0, 3)];
+  v.swap_screen = m.swap_screens;
+  v.upright_screen = m.upright;
+  v.large_screen_proportion = static_cast<float>(std::clamp(m.large_proportion, 1, 16));
+  v.small_screen_position = Settings::SmallScreenPosition::BottomRight;
+  v.resolution_factor = g_gl ? static_cast<u32>(std::clamp(m.scale, 1, kMaxScale)) : 1;
+  {
+    const auto size = Layout::GetMinimumSizeFromLayout(v.layout_option.GetValue(), m.upright);
+    g_w = static_cast<int>(size.first * v.resolution_factor.GetValue());
+    g_h = static_cast<int>(size.second * v.resolution_factor.GetValue());
+  }
   v.use_disk_shader_cache = false;
   v.async_shader_compilation = false;
   v.dump_textures = false;
@@ -370,6 +420,8 @@ void ApplyMachine(const Machine& m)
 }
 }  // namespace
 
+uint32_t* (*VideoMemory)(size_t pixels) = nullptr;
+
 const char* Error()
 {
   return g_error.c_str();
@@ -398,6 +450,25 @@ bool Init(const Machine& m, const std::string& rom)
       g_gl = true;
   }
   ApplyMachine(m);
+  {
+    // the picture and the readback's rows: twice the picture
+    const size_t pixels = static_cast<size_t>(g_w) * g_h;
+    if (!g_video)
+    {
+      // the most pixels a layout holds: the two screens stacked, at the
+      // highest scale (side by side is fewer)
+      const size_t most = static_cast<size_t>(Core::kScreenTopWidth) *
+                          (Core::kScreenTopHeight + Core::kScreenBottomHeight) * kMaxScale * kMaxScale;
+      g_video = VideoMemory ? VideoMemory(2 * most) : new uint32_t[2 * most];
+      if (!g_video)
+      {
+        g_error = "no memory for the picture";
+        return false;
+      }
+      g_rows = g_video + most;
+    }
+    std::fill(g_video, g_video + pixels, 0xFF000000u);
+  }
 
   Input::RegisterFactory<Input::ButtonDevice>("chimera", std::make_shared<ButtonFactory>());
   Input::RegisterFactory<Input::AnalogDevice>("chimera", std::make_shared<StickFactory>());
@@ -463,6 +534,22 @@ bool Init(const Machine& m, const std::string& rom)
     g_error = "Azahar could not boot the game (status " + std::to_string(static_cast<int>(result)) +
               "): " + system.GetStatusDetails();
     return false;
+  }
+  // The console's user name, into its settings before anything has run:
+  // what its own settings menu would have written (cfg's user name block).
+  if (!m.username.empty())
+  {
+    const std::u16string name = Common::UTF8ToUTF16(m.username);
+    if (name.empty() || name.size() > 10)
+    {
+      g_error = "the user name is not one the console can hold: one to ten characters";
+      return false;
+    }
+    if (auto cfg = Service::CFG::GetModule(system))
+    {
+      cfg->SetUsername(name);
+      cfg->UpdateConfigNANDSavegame();
+    }
   }
   u64 program_id = 0;
   system.GetAppLoader().ReadProgramId(program_id);
@@ -585,8 +672,8 @@ void SetAxis(int i, int32_t value)
 
 const uint32_t* Video(int* w, int* h)
 {
-  *w = kW;
-  *h = kH;
+  *w = g_w;
+  *h = g_h;
   return g_video;
 }
 

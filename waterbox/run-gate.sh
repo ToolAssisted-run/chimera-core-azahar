@@ -63,6 +63,17 @@ finish() {
 stream() { awk '/^frame/' "$1"; }
 field() { echo "$1" | awk -v f="$2" '{for (i=1;i<=NF;i++) if ($i==f) {print $(i+1); exit}}'; }
 last() { stream "$1" | tail -1; }
+# alive <file>: the run reported at least one frame. A comparison of two
+# streams must ask this first: two runs that both died at Init print the same
+# nothing (or the same host chatter), and "the same" would then pass on a
+# machine that never started - which is what the savestate legs did the day
+# the sandbox's memory layout fell behind the package's (2026-10-09).
+alive() { [ "$(stream "$1" | wc -l)" -ge 1 ]; }
+# same <a> <b>: the two runs reported the same frames. What is compared is the
+# stream and not the file: the sandbox's host says a line of its own on the
+# same descriptor the first time the guest allocates invisible memory, and a
+# run in two hosts says it twice.
+same() { [ "$(stream "$1")" = "$(stream "$2")" ]; }
 
 # ---------------------------------------------------------------- 1. build
 if [ "$quick" -eq 0 ]; then
@@ -175,7 +186,7 @@ for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 	else
 		report PASS "$name: the machine is alive" "$pics distinct pictures in 600 frames"
 	fi
-	if [ -s "$work/$name.n" ] && cmp -s "$work/$name.n" "$work/$name.n2"; then
+	if alive "$work/$name.n" && same "$work/$name.n" "$work/$name.n2"; then
 		report PASS "$name: native is deterministic (600 frames)"
 	else
 		report FAIL "$name: native is deterministic (600 frames)"
@@ -184,19 +195,19 @@ for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 	# with a pattern under MALLOC_PERTURB_, and an emulator that copies an
 	# uninitialised host byte into the guest digests differently (patch 0013
 	# was found this way: Cars 2 differed from frame 27)
-	if [ -s "$work/$name.nh" ] && cmp -s "$work/$name.n" "$work/$name.nh"; then
+	if alive "$work/$name.nh" && same "$work/$name.n" "$work/$name.nh"; then
 		report PASS "$name: nothing the host's heap held reaches the machine"
 	else
 		report FAIL "$name: nothing the host's heap held reaches the machine" \
 			"first difference: $(diff "$work/$name.n" "$work/$name.nh" 2>&1 | awk 'NR==2' | cut -c1-60)"
 	fi
-	if [ -s "$work/$name.n" ] && cmp -s "$work/$name.n" "$work/$name.w"; then
+	if alive "$work/$name.n" && same "$work/$name.n" "$work/$name.w"; then
 		report PASS "$name: native == sandbox (600 frames, exercised)"
 	else
 		report FAIL "$name: native == sandbox (600 frames, exercised)" \
 			"first difference: $(diff "$work/$name.n" "$work/$name.w" 2>&1 | awk 'NR==2' | cut -c1-60)"
 	fi
-	if [ -s "$work/$name.ni" ] && ! cmp -s "$work/$name.ni" "$work/$name.n"; then
+	if alive "$work/$name.ni" && alive "$work/$name.n" && ! same "$work/$name.ni" "$work/$name.n"; then
 		report PASS "$name: the input reaches the machine" "negative control: an idle run digests differently"
 	else
 		report FAIL "$name: the input reaches the machine" "an exercised run digests like an idle one"
@@ -218,12 +229,12 @@ for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 	"$wbxrun" "$core" "$w" --frames 300 --report 30 --exercise --rerecord > "$work/$name.r" 2>"$work/$name.re" &
 	"$wbxrun" "$core" "$w" --frames 300 --report 30 --exercise --session > "$work/$name.s" 2>/dev/null &
 	wait
-	if [ -s "$work/$name.p" ] && cmp -s "$work/$name.p" "$work/$name.r"; then
+	if alive "$work/$name.p" && same "$work/$name.p" "$work/$name.r"; then
 		report PASS "$name: save+load around every frame changes nothing" "$(grep -o 'stateBytes=[0-9]*' "$work/$name.re")"
 	else
 		report FAIL "$name: save+load around every frame changes nothing"
 	fi
-	if [ -s "$work/$name.p" ] && cmp -s "$work/$name.p" "$work/$name.s"; then
+	if alive "$work/$name.p" && same "$work/$name.p" "$work/$name.s"; then
 		report PASS "$name: a state reopens in a new host"
 	else
 		report FAIL "$name: a state reopens in a new host"
@@ -283,7 +294,7 @@ with zipfile.ZipFile('$work/save.zip', 'w', zipfile.ZIP_DEFLATED) as z:
 	fi
 	"$native" "$ws" --frames 120 --report 120 > "$work/sv.with" 2>/dev/null || true
 	"$native" "$w" --frames 120 --report 120 > "$work/sv.without" 2>/dev/null || true
-	if [ -s "$work/sv.with" ] && [ "$(field "$(last "$work/sv.with")" ram)" != "$(field "$(last "$work/sv.without")" ram)" ]; then
+	if alive "$work/sv.with" && alive "$work/sv.without" && [ "$(field "$(last "$work/sv.with")" ram)" != "$(field "$(last "$work/sv.without")" ram)" ]; then
 		report PASS "drancia: the game starts from its save data" "against the same boot without it"
 	else
 		report FAIL "drancia: the game starts from its save data"
@@ -401,18 +412,18 @@ for game in darkwitch.cci drancia.cci; do
 	wait
 	pics="$(stream "$work/gl-$name.n" | awk '{print $7}' | sort -u | wc -l)"
 	if grep -q "^gpu bridge: .*Core Profile" "$work/gl-$name.we" && ! grep -q "software renderer" "$work/gl-$name.we" \
-		&& [ "$pics" -ge 3 ] && ! cmp -s "$work/gl-$name.n" "$work/$name.n"; then
+		&& [ "$pics" -ge 3 ] && ! same "$work/gl-$name.n" "$work/$name.n"; then
 		report PASS "$name: the GPU draws it (opengl-hw)" "$pics pictures, and not the software renderer's stream"
 	else
 		report FAIL "$name: the GPU draws it (opengl-hw)" "$pics pictures; see build/gate/gl-$name.we"
 	fi
-	if [ -s "$work/gl-$name.n" ] && cmp -s "$work/gl-$name.n" "$work/gl-$name.w"; then
+	if alive "$work/gl-$name.n" && same "$work/gl-$name.n" "$work/gl-$name.w"; then
 		report PASS "$name: GPU native == sandbox (600 frames, exercised)"
 	else
 		report FAIL "$name: GPU native == sandbox (600 frames, exercised)" \
 			"first difference: $(diff "$work/gl-$name.n" "$work/gl-$name.w" 2>&1 | awk 'NR==2' | cut -c1-60)"
 	fi
-	if [ -s "$work/$name.n" ] && cmp -s "$work/gl-$name.nobridge" "$work/$name.n" && grep -q "no GPU bridge" "$work/gl-$name.nbe"; then
+	if alive "$work/$name.n" && same "$work/gl-$name.nobridge" "$work/$name.n" && grep -q "no GPU bridge" "$work/gl-$name.nbe"; then
 		report PASS "$name: with no bridge, opengl-hw draws in software" "and says so"
 	else
 		report FAIL "$name: with no bridge, opengl-hw draws in software"
@@ -423,12 +434,12 @@ for game in darkwitch.cci drancia.cci; do
 	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --rerecord > "$work/gl-$name.r" 2>"$work/gl-$name.re" &
 	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --session > "$work/gl-$name.s" 2>"$work/gl-$name.se" &
 	wait
-	if [ -s "$work/gl-$name.p" ] && cmp -s "$work/gl-$name.p" "$work/gl-$name.r"; then
+	if alive "$work/gl-$name.p" && same "$work/gl-$name.p" "$work/gl-$name.r"; then
 		report PASS "$name: GPU: a rebuild after every frame's load changes nothing" "300 frames"
 	else
 		report FAIL "$name: GPU: a rebuild after every frame's load changes nothing"
 	fi
-	if [ -s "$work/gl-$name.p" ] && cmp -s "$work/gl-$name.p" "$work/gl-$name.s"; then
+	if alive "$work/gl-$name.p" && same "$work/gl-$name.p" "$work/gl-$name.s"; then
 		report PASS "$name: GPU: a state reopens in a new host and draws on"
 	else
 		report FAIL "$name: GPU: a state reopens in a new host and draws on"
@@ -447,6 +458,132 @@ if [ -f "$roms/drancia.cci" ] && [ -x "$run" ] && [ -f "$pkg" ]; then
 	else
 		report FAIL "drancia: 760 frames in the engine on the GPU" "see build/gate/engine-gl.out"
 	fi
+fi
+
+# ------------------------------------- 7. the picture's shape, and the user name
+# chimera#223. Screen Layout, Swap Screens, Upright Screens, Large Screen
+# Proportion and Linear Filtering are declared the picture only, and a
+# declaration like that is a claim about memory: every run below must leave
+# the RAM the stacked run leaves, while the picture changes. Azahar's
+# internal resolution, its texture filters and its forced texture sampling
+# were measured the same way, changed the RAM, and are not offered.
+#
+# pic <stream line> -> "WxH hash"
+pic() { echo "$1" | awk '{for (i=1;i<=NF;i++) if ($i=="vid") {print $(i+1), $(i+2); exit}}'; }
+if [ -f "$roms/drancia.cci" ]; then
+	# lay <name> <settings> [harness arguments]: 760 frames of the title menu
+	lay() {
+		n="$1"; workdir "$work/lay-$n" drancia.cci "$2"; shift 2
+		"$native" "$work/lay-$n" --frames 760 --report 760 "$@" > "$work/lay-$n.n" 2>"$work/lay-$n.ne"
+	}
+	lay stacked '{}' &
+	lay side '{"layout":"side-by-side"}' &
+	lay large '{"layout":"large"}' &
+	lay bottom '{"layout":"single","swap_screens":true}' &
+	wait
+	lay upright '{"upright":true}' &
+	lay large2 '{"layout":"large","large_screen_proportion":2}' &
+	# The menu's touch (section 3): the middle of the bottom screen, 93 rows
+	# down. Stacked that is the picture's (200, 333); side by side the bottom
+	# screen starts at x 400, so it is (560, 93) of 720x240. The Touch axes are
+	# a place in the picture, so the two runs name the same place on the panel
+	# and must leave the same machine.
+	lay touch-stacked '{}' --press 14:700:6 --axis 4:32768:700:6 --axis 5:45466:700:6 &
+	lay touch-side '{"layout":"side-by-side"}' --press 14:700:6 --axis 4:50973:700:6 --axis 5:25396:700:6 &
+	wait
+	base="$(last "$work/lay-stacked.n")"
+	bad=""
+	for want in "side 720x240" "large 480x240" "bottom 320x240" "upright 480x400" "large2 560x240"; do
+		n="${want% *}"; size="${want#* }"
+		line="$(last "$work/lay-$n.n")"
+		[ -n "$line" ] && [ "$(field "$line" ram)" = "$(field "$base" ram)" ] \
+			&& [ "$(field "$line" vid)" = "$size" ] && [ "$(pic "$line")" != "$(pic "$base")" ] \
+			|| bad="$bad $n($(field "$line" vid) ram $(field "$line" ram))"
+	done
+	if [ -n "$base" ] && [ "$(field "$base" vid)" = "400x480" ] && [ -z "$bad" ]; then
+		report PASS "drancia: a layout is the picture only (software)" "five layouts, each its own size, the RAM the stacked run's"
+	else
+		report FAIL "drancia: a layout is the picture only (software)" "stacked ram $(field "$base" ram);$bad"
+	fi
+	ts="$(last "$work/lay-touch-stacked.n")"; td="$(last "$work/lay-touch-side.n")"
+	if [ -n "$ts" ] && [ "$(field "$ts" ram)" = "$(field "$td" ram)" ] && [ "$(field "$ts" ram)" != "$(field "$base" ram)" ]; then
+		report PASS "drancia: a touch is a place in the picture" "the same point of the bottom screen, stacked and side by side, leaves the same machine"
+	else
+		report FAIL "drancia: a touch is a place in the picture" "stacked $(field "$ts" ram) side $(field "$td" ram) idle $(field "$base" ram)"
+	fi
+	"$wbxrun" "$core" "$work/lay-upright" --frames 760 --report 760 > "$work/lay-upright.w" 2>/dev/null
+	if alive "$work/lay-upright.n" && same "$work/lay-upright.n" "$work/lay-upright.w"; then
+		report PASS "drancia: a layout, native == sandbox" "upright, 760 frames"
+	else
+		report FAIL "drancia: a layout, native == sandbox" "$(last "$work/lay-upright.w" | cut -c1-70)"
+	fi
+	# a value this build does not know is refused, not defaulted
+	lay nolayout '{"layout":"diagonal"}' || true
+	lay longname '{"username":"elevenchars"}' || true
+	if grep -q "no such screen layout: diagonal" "$work/lay-nolayout.ne" && [ ! -s "$work/lay-nolayout.n" ] \
+		&& grep -q "one to ten characters" "$work/lay-longname.ne" && [ ! -s "$work/lay-longname.n" ]; then
+		report PASS "drancia: a layout or a name it cannot give is refused" "and says which"
+	else
+		report FAIL "drancia: a layout or a name it cannot give is refused" "$(tail -1 "$work/lay-nolayout.ne" | cut -c1-60)"
+	fi
+else
+	report SKIP "drancia: the layout legs" "no drancia.cci in $roms"
+fi
+
+# The user name is the console's own setting, and Cars 2 reads it: a name
+# changes that game's memory, and Azahar's default spelled out does not.
+if [ -f "$roms/cars2.3ds" ]; then
+	for u in none:'{}' azahar:'{"username":"AZAHAR"}' chimera:'{"username":"Chimera"}'; do
+		n="${u%%:*}"
+		workdir "$work/name-$n" cars2.3ds "${u#*:}"
+		"$native" "$work/name-$n" --frames 600 --report 600 > "$work/name-$n.n" 2>/dev/null &
+	done
+	wait
+	none="$(field "$(last "$work/name-none.n")" ram)"
+	if [ -n "$none" ] && [ "$(field "$(last "$work/name-azahar.n")" ram)" = "$none" ] \
+		&& [ "$(field "$(last "$work/name-chimera.n")" ram)" != "$none" ]; then
+		report PASS "cars2: the user name is part of the machine" "another name changes the RAM; the default spelled out does not"
+	else
+		report FAIL "cars2: the user name is part of the machine" "default $none AZAHAR $(field "$(last "$work/name-azahar.n")" ram) Chimera $(field "$(last "$work/name-chimera.n")" ram)"
+	fi
+else
+	report SKIP "cars2: the user name is part of the machine" "no cars2.3ds in $roms"
+fi
+
+# The same claims of the OpenGL renderer, which draws the layout itself.
+# (Internal resolution is not here because it is not offered: measured with
+# this leg's own runs at 2x, the RAM differed from 1x and - what rules it out -
+# a load around every frame gave another run than no load. docs/PLAN.md.)
+if [ -f "$roms/darkwitch.cci" ]; then
+	glay() {
+		n="$1"; workdir "$work/glay-$n" darkwitch.cci "$2"; shift 2
+		gpurun "$native" "$work/glay-$n" --frames 900 --report 900 "$@" > "$work/glay-$n.n" 2>"$work/glay-$n.ne"
+	}
+	glay stacked '{"renderer":"opengl-hw"}' &
+	glay large '{"renderer":"opengl-hw","layout":"large","swap_screens":true}' &
+	glay nearest '{"renderer":"opengl-hw","layout":"large","swap_screens":true,"linear_filter":false}' &
+	wait
+	g1="$(last "$work/glay-stacked.n")"; gl="$(last "$work/glay-large.n")"; gn="$(last "$work/glay-nearest.n")"
+	if grep -q "^gpu bridge: .*Core Profile" "$work/glay-large.ne" && [ -n "$g1" ] \
+		&& [ "$(field "$gl" ram)" = "$(field "$g1" ram)" ] && [ "$(field "$gn" ram)" = "$(field "$g1" ram)" ] \
+		&& [ "$(field "$gl" vid)" = "420x240" ] && [ "$(pic "$gl")" != "$(pic "$gn")" ]; then
+		report PASS "darkwitch: GPU: a layout and its filter are the picture only" "large and swapped, 420x240; linear filtering off changes the picture and not the RAM"
+	else
+		report FAIL "darkwitch: GPU: a layout and its filter are the picture only" "ram $(field "$g1" ram) / $(field "$gl" ram) / $(field "$gn" ram), $(field "$gl" vid)"
+	fi
+	# and a load does not undo it: the renderer made again after every frame's
+	# load draws into the same layout
+	g="$work/glay-large"
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise > "$work/glay.p" 2>/dev/null &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --rerecord > "$work/glay.r" 2>/dev/null &
+	wait
+	if alive "$work/glay.p" && same "$work/glay.p" "$work/glay.r" && [ "$(field "$(last "$work/glay.p")" vid)" = "420x240" ]; then
+		report PASS "darkwitch: GPU: a layout, a load every frame changes nothing" "large and swapped, 300 frames in the sandbox"
+	else
+		report FAIL "darkwitch: GPU: a layout, a load every frame changes nothing"
+	fi
+else
+	report SKIP "darkwitch: the GPU's layout legs" "no darkwitch.cci in $roms"
 fi
 
 [ "$ran_any" -eq 1 ] || echo "no game in $roms: the machine legs were skipped (see the header of this script)"

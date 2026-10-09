@@ -8,7 +8,9 @@ miniBox's sandbox.
 |---|---|---|
 | Nintendo 3DS / New Nintendo 3DS | `3DS` | A B X Y, D-pad, L R, Start Select, ZL ZR (New 3DS), Circle Pad, C-Stick (New 3DS), touch screen, motion |
 
-The picture is the two screens stacked, 400x480. The touch screen is the
+The picture is the two screens stacked, 400x480, unless the project's Screen
+Layout says otherwise (one screen, one large and one small, side by side,
+swapped, upright). The touch screen is the
 **Touch** button plus **Touch X/Y**, a point on the whole picture in
 0..65535 (as every absolute position in Chimera is): a point on the bottom
 screen touches it, anywhere else touches nothing. Lag frames are counted: a
