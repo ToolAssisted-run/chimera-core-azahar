@@ -12,14 +12,15 @@ MB   ?= $(or $(MINIBOX_DIR),$(HOME)/chimera/extern/chimera-common-minibox)
 
 TUFLAGS  := $(shell python3 extract-tu-flags.py $(B)/compile_commands.json src/core/core.cpp)
 MBINCS   := -Inative-shim -I$(MB)/source/guest/include -I$(MB)/extern/jsmn
-GLINCS   := -I$(MB)/source/gl -I$(ROOT)/extern/azahar/externals/glad/include -Iglad/include -Igenerated-gl
+GLINCS   := -I$(MB)/source/gl -I$(ROOT)/extern/azahar/externals/glad/include -Iglad/include -Igenerated-gl \
+            -I$(ROOT)/extern/azahar/externals/dynarmic/externals/robin-map/include
 CXXFLAGS := -O2 -g1 $(TUFLAGS) $(MBINCS) $(GLINCS) -I.
 CFLAGS   := -O2 -g1 $(MBINCS) -I.
 
 LIBS := $(shell find $(B) -name '*.a' | sort)
-HDRS := azahar-driver.h chimera-fs-host.h gate-harness.h zip-read.h gl-shim.h
+HDRS := azahar-driver.h azahar-surfaces.h chimera-fs-host.h gate-harness.h zip-read.h gl-shim.h
 GEN  := generated-gl/gl-bridge-guest.cpp
-OBJS := $(O)/run-native.o $(O)/wbx-entry.o $(O)/azahar-driver.o $(O)/chimera-fs.o $(O)/zip-read.o \
+OBJS := $(O)/run-native.o $(O)/wbx-entry.o $(O)/azahar-driver.o $(O)/azahar-surfaces.o $(O)/chimera-fs.o $(O)/zip-read.o \
         $(O)/gl-shim.o $(O)/gl-bridge-guest.o $(O)/gl-host-renamed.o
 
 all: $(O)/run-native

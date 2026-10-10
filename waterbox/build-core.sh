@@ -54,7 +54,7 @@ g++ -specs "$sr/lib/musl-gcc.specs" -mcmodel=large -fno-pic -fno-pie \
 	-static -no-pie -Wl,--eh-frame-hdr,-O2,--no-relax,-z,stack-size=8388608 -T "$mb/source/guest/linkscript.T" \
 	-Wl,-u,pthread_once -Wl,-u,pthread_cond_wait -Wl,-u,pthread_cond_broadcast -Wl,-u,pthread_key_create \
 	-o "$out/core.wbx" \
-	"$here"/obj-guest/wbx-entry.o "$here"/obj-guest/azahar-driver.o \
+	"$here"/obj-guest/wbx-entry.o "$here"/obj-guest/azahar-driver.o "$here"/obj-guest/azahar-surfaces.o \
 	"$here"/obj-guest/chimera-fs.o "$here"/obj-guest/zip-read.o "$here"/obj-guest/guest-syscalls.o \
 	"$here"/obj-guest/gl-shim.o "$here"/obj-guest/gl-bridge-guest.o \
 	"$mbuild/source/guest/cxxglue.c.o" "$mbuild/source/guest/emulibc.c.o" \

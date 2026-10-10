@@ -154,6 +154,20 @@ static void state_loaded(void)
 		((void (MB_GUEST_ABI *)(void))r.data)();
 }
 
+/* What chimera's session does before it takes a state: the core is told
+ * (StateSaving), so it can bring into its memory what is still on the card.
+ * --no-state-saving leaves it untold: the control. */
+static int g_noStateSaving;
+static void state_saving(void)
+{
+	mb_return r;
+	if (g_noStateSaving)
+		return;
+	wbx_get_proc_addr(g_host, "StateSaving", &r);
+	if (r.data)
+		((void (MB_GUEST_ABI *)(void))r.data)();
+}
+
 static void core_pre_frame(void)
 {
 	const long frame = g_frameNo++;
@@ -161,6 +175,7 @@ static void core_pre_frame(void)
 	if (g_session && frame == g_sessionAt)
 	{
 		/* the machine leaves in a state and arrives in a new host */
+		state_saving();
 		g_state.len = 0;
 		wbx_save_state(g_host, mem_write, (uintptr_t)&g_state, &r);
 		if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
@@ -186,6 +201,7 @@ static void core_pre_frame(void)
 	}
 	if (!g_rerecord)
 		return;
+	state_saving();
 	g_state.len = 0;
 	wbx_save_state(g_host, mem_write, (uintptr_t)&g_state, &r);
 	if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
@@ -202,7 +218,7 @@ static void build_host(void)
 	if (!wf) { perror(g_wbxPath); exit(1); }
 
 	/* matches waterbox.config memoryLayoutMiB */
-	mb_memory_layout_template layout = { 256ull << 20, 16ull << 20, 16ull << 20, 256ull << 20, 3072ull << 20 };
+	mb_memory_layout_template layout = { 256ull << 20, 16ull << 20, 40ull << 20, 256ull << 20, 3072ull << 20 };
 	freader fr = { wf };
 	mb_return r;
 	wbx_create_host(&layout, "core.wbx", file_read, (uintptr_t)&fr, &r);
@@ -318,6 +334,7 @@ int main(int argc, char **argv)
 	{
 		if (!strcmp(argv[i], "--rerecord")) g_rerecord = 1;
 		if (!strcmp(argv[i], "--session")) g_session = 1;
+		if (!strcmp(argv[i], "--no-state-saving")) g_noStateSaving = 1;
 	}
 
 	struct gate_opts o;

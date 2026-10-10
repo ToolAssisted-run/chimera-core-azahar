@@ -1,0 +1,247 @@
+diff --git a/src/video_core/rasterizer_cache/rasterizer_cache.h b/src/video_core/rasterizer_cache/rasterizer_cache.h
+index d90c638..3def1fa 100644
+--- a/src/video_core/rasterizer_cache/rasterizer_cache.h
++++ b/src/video_core/rasterizer_cache/rasterizer_cache.h
+@@ -1401,11 +1401,52 @@ void RasterizerCache<T>::RegisterSurface(SurfaceId surface_id) {
+                "Trying to register an already registered surface");
+ 
+     surface.flags |= SurfaceFlagBits::Registered;
++#ifdef CHIMERA_CORE
++    surface.chimera_serial = ++chimera_serial;
++#endif
+     UpdatePagesCachedCount(surface.addr, surface.size, 1);
+     ForEachPage(surface.addr, surface.size,
+                 [this, surface_id](u64 page) { page_table[page].push_back(surface_id); });
+ }
+ 
++#ifdef CHIMERA_CORE
++template <class T>
++void RasterizerCache<T>::ChimeraForEachRegistered(void (*fn)(void* ctx, Surface& surface),
++                                                  void* ctx) {
++    for (const auto& [page, surfaces] : page_table) {
++        for (const SurfaceId surface_id : surfaces) {
++            Surface& surface = slot_surfaces[surface_id];
++            // a surface is listed under every page it touches: its first one speaks for it
++            if ((surface.addr >> CITRA_PAGEBITS) == page) {
++                fn(ctx, surface);
++            }
++        }
++    }
++}
++
++template <class T>
++typename T::Surface& RasterizerCache<T>::ChimeraAdopt(const ChimeraSurfaceRecord& record) {
++    // Registered is RegisterSurface's to set, Picked is a search's own mark, and
++    // Tracked says a texture cube holds this face: this cache holds no cube yet
++    const SurfaceFlagBits flags =
++        record.flags & ~(SurfaceFlagBits::Registered | SurfaceFlagBits::Picked |
++                         SurfaceFlagBits::Tracked);
++    const SurfaceId surface_id = slot_surfaces.insert(runtime, record.params, flags);
++    Surface& surface = slot_surfaces[surface_id];
++    surface.fill_size = record.fill_size;
++    surface.fill_data = record.fill_data;
++    surface.invalid_regions.clear();
++    for (u32 i = 0; i < record.invalid_count; i++) {
++        surface.invalid_regions.insert(
++            SurfaceInterval{record.invalid[2 * i], record.invalid[2 * i + 1]});
++    }
++    RegisterSurface(surface_id);
++    surface.chimera_serial = record.serial;
++    surface.modification_tick = record.tick;
++    return surface;
++}
++#endif
++
+ template <class T>
+ void RasterizerCache<T>::UnregisterSurface(SurfaceId surface_id) {
+     Surface& surface = slot_surfaces[surface_id];
+diff --git a/src/video_core/rasterizer_cache/rasterizer_cache_base.h b/src/video_core/rasterizer_cache/rasterizer_cache_base.h
+index 071235e..e9429e8 100644
+--- a/src/video_core/rasterizer_cache/rasterizer_cache_base.h
++++ b/src/video_core/rasterizer_cache/rasterizer_cache_base.h
+@@ -57,6 +57,9 @@ DECLARE_ENUM_FLAG_OPERATORS(MatchFlags);
+ class CustomTexManager;
+ class RendererBase;
+ enum class SurfaceFlagBits : u32;
++#ifdef CHIMERA_CORE
++struct ChimeraSurfaceRecord;
++#endif
+ 
+ template <class T>
+ class RasterizerCache {
+@@ -138,6 +141,22 @@ public:
+     /// Clear all cached resources tracked by this cache manager
+     void ClearAll(bool flush);
+ 
++#ifdef CHIMERA_CORE
++    /// chimera: every registered surface, once each, in no order
++    void ChimeraForEachRegistered(void (*fn)(void* ctx, Surface& surface), void* ctx);
++
++    /// chimera: a registered surface made from a record; its pixels are the caller's to write
++    Surface& ChimeraAdopt(const ChimeraSurfaceRecord& record);
++
++    /// chimera: nothing drawn is waiting to be written to the console's memory
++    bool ChimeraFlushed() const {
++        return dirty_regions.empty();
++    }
++
++    /// chimera: the last registration's number
++    u64 chimera_serial = 0;
++#endif
++
+ private:
+     /// Iterate over all page indices in a range
+     template <typename Func>
+diff --git a/src/video_core/rasterizer_cache/surface_base.h b/src/video_core/rasterizer_cache/surface_base.h
+index e5bab22..0851152 100644
+--- a/src/video_core/rasterizer_cache/surface_base.h
++++ b/src/video_core/rasterizer_cache/surface_base.h
+@@ -90,6 +90,31 @@ public:
+     u32 fill_size = 0;
+     std::array<u8, 4> fill_data{};
+     u64 modification_tick = 1;
++#ifdef CHIMERA_CORE
++    /// chimera: which registration of the cache this is (see ChimeraSurfaceRecord)
++    u64 chimera_serial = 0;
++#endif
+ };
+ 
++#ifdef CHIMERA_CORE
++/// chimera: one registered surface of the cache, as a savestate has to carry it.
++/// A surface drawn larger than the console draws is a texture on the card and
++/// nowhere else: the console's memory holds it scaled down. A state that is to
++/// give the same run back keeps every registered surface - what it is, which of
++/// it is valid, and (the surface's own ChimeraRead) its pixels - and a cache
++/// made again after a load adopts them in the order they were registered in.
++/// `serial` and `tick` name a surface's pixels: a registration is numbered
++/// once, and every change to its pixels moves the tick.
++struct ChimeraSurfaceRecord {
++    SurfaceParams params;
++    SurfaceFlagBits flags;
++    u32 fill_size;
++    std::array<u8, 4> fill_data;
++    u64 serial;
++    u64 tick;
++    const PAddr* invalid; ///< invalid_count pairs: [lower, upper)
++    u32 invalid_count;
++};
++#endif
++
+ } // namespace VideoCore
+diff --git a/src/video_core/renderer_opengl/gl_rasterizer.h b/src/video_core/renderer_opengl/gl_rasterizer.h
+index 76a7acb..6decfa6 100644
+--- a/src/video_core/renderer_opengl/gl_rasterizer.h
++++ b/src/video_core/renderer_opengl/gl_rasterizer.h
+@@ -57,6 +57,13 @@ public:
+                            u32 pixel_stride, ScreenInfo& screen_info);
+     bool AccelerateDrawBatch(bool is_indexed) override;
+ 
++#ifdef CHIMERA_CORE
++    /// chimera: the surfaces, for the core to keep in a state and put back
++    RasterizerCache& ChimeraCache() {
++        return res_cache;
++    }
++#endif
++
+ private:
+     /// Syncs pipeline state from PICA registers
+     void SyncDrawState();
+diff --git a/src/video_core/renderer_opengl/gl_texture_runtime.cpp b/src/video_core/renderer_opengl/gl_texture_runtime.cpp
+index 212dda3..835cc53 100644
+--- a/src/video_core/renderer_opengl/gl_texture_runtime.cpp
++++ b/src/video_core/renderer_opengl/gl_texture_runtime.cpp
+@@ -611,6 +611,68 @@ void Surface::ScaleUp(u32 new_scale) {
+     }
+ }
+ 
++#ifdef CHIMERA_CORE
++u32 Surface::ChimeraWidth(u32 level) const {
++    return std::max(GetScaledWidth() >> level, 1u);
++}
++
++u32 Surface::ChimeraHeight(u32 level) const {
++    return std::max(GetScaledHeight() >> level, 1u);
++}
++
++u32 Surface::ChimeraBytesPerPixel() const {
++    if (!textures[0].handle) {
++        return 0;
++    }
++    switch (tuple.type) {
++    case GL_UNSIGNED_BYTE:
++        return tuple.format == GL_BGR || tuple.format == GL_RGB ? 3 : 4;
++    case GL_UNSIGNED_SHORT:
++    case GL_UNSIGNED_SHORT_5_5_5_1:
++    case GL_UNSIGNED_SHORT_5_6_5:
++    case GL_UNSIGNED_SHORT_4_4_4_4:
++        return 2;
++    case GL_UNSIGNED_INT:
++    case GL_UNSIGNED_INT_8_8_8_8:
++    case GL_UNSIGNED_INT_24_8:
++        return 4;
++    default:
++        UNREACHABLE_MSG("chimera: a surface in a format no state can carry");
++    }
++}
++
++void Surface::ChimeraRead(u32 level, u32 y, u32 rows, void* out, std::size_t size) {
++    const u32 width = ChimeraWidth(level);
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
++    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
++    glPixelStorei(GL_PACK_ALIGNMENT, 1);
++    if (driver->HasArbGetTextureSubImage()) {
++        glGetTextureSubImage(Handle(1), level, 0, y, 0, width, rows, 1, tuple.format, tuple.type,
++                             static_cast<GLsizei>(size), out);
++    } else {
++        const OpenGLState prev_state = OpenGLState::GetCurState();
++        OpenGLState state = prev_state;
++        state.draw.read_framebuffer = runtime->read_fbos[FboIndex(type)].handle;
++        state.Apply();
++        Attach(GL_READ_FRAMEBUFFER, level, 0, true);
++        glReadPixels(0, y, width, rows, tuple.format, tuple.type, out);
++        prev_state.Apply();
++    }
++    glPixelStorei(GL_PACK_ALIGNMENT, 4);
++}
++
++void Surface::ChimeraWrite(u32 level, const void* pixels) {
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
++    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
++    glActiveTexture(TEMP_UNIT);
++    glBindTexture(GL_TEXTURE_2D, Handle(1));
++    glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, ChimeraWidth(level), ChimeraHeight(level),
++                    tuple.format, tuple.type, pixels);
++    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
++}
++#endif
++
+ u32 Surface::GetInternalBytesPerPixel() const {
+     // RGB8 is converted to RGBA8 on OpenGL ES since it doesn't support BGR8
+     if (driver->IsOpenGLES() && pixel_format == VideoCore::PixelFormat::RGB8) {
+diff --git a/src/video_core/renderer_opengl/gl_texture_runtime.h b/src/video_core/renderer_opengl/gl_texture_runtime.h
+index 2428c44..91b8b87 100644
+--- a/src/video_core/renderer_opengl/gl_texture_runtime.h
++++ b/src/video_core/renderer_opengl/gl_texture_runtime.h
+@@ -145,6 +145,21 @@ public:
+     /// Returns the bpp of the internal surface format
+     u32 GetInternalBytesPerPixel() const;
+ 
++#ifdef CHIMERA_CORE
++    /// chimera: a level of the texture this surface draws and is sampled from,
++    /// at the size it has on the card: its width, height, and the bytes of one
++    /// of its pixels as ChimeraRead and ChimeraWrite pass them (0: no texture)
++    u32 ChimeraWidth(u32 level) const;
++    u32 ChimeraHeight(u32 level) const;
++    u32 ChimeraBytesPerPixel() const;
++
++    /// chimera: `rows` rows of a level from row `y`, tightly packed, into `out`
++    void ChimeraRead(u32 level, u32 y, u32 rows, void* out, std::size_t size);
++
++    /// chimera: a whole level from tightly packed rows
++    void ChimeraWrite(u32 level, const void* pixels);
++#endif
++
+ private:
+     /// Performs blit between the scaled/unscaled images
+     void BlitScale(const VideoCore::TextureBlit& blit, bool up_scale);

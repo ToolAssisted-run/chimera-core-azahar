@@ -128,8 +128,8 @@ Open on the GPU side:
   300 frames), the process's GPU dedicated memory stayed between 54 and
   89 MB and ended at 54 MB, and private memory settled at about 640 MB.
   Worth re-measuring over thousands of loads before calling it closed.
-- Internal resolution above 1x is not offered, and since chimera#223 the
-  reason is measured: see "The picture's settings" below.
+- Internal resolution above 1x needs the state to carry the renderer's
+  surfaces: see "Internal resolution" below.
 - The GPU's pictures reach the console's memory, so under opengl-hw the
   machine itself depends on the driver: a movie replays on the same driver.
 
@@ -170,25 +170,11 @@ on llvmpipe; RAM digest against 1x stacked):
 |---|---|---|---|
 | large, large + swap, side-by-side | same | differs | the picture only |
 | linear filtering off (large + swap) | same | differs | the picture only |
-| internal resolution 2x | DIFFERS | 800x960 | not offered: see below |
+| internal resolution 2x | DIFFERS | 800x960 | a setting of the machine: see the next section |
 | texture filter xBRZ (at 2x) | DIFFERS from 2x | differs | not offered |
 | texture sampling "linear" | DIFFERS, at 1x and 2x | - | not offered |
 | texture sampling "nearest" | same | same | (nothing to offer alone) |
 
-Internal resolution changes memory because of how this core holds the GPU's
-pictures: every frame ends by writing them into the console's memory at the
-console's size, and what comes down from a 2x drawing is not what a 1x
-drawing leaves. That alone would make it a setting of the machine, declared
-as one. What rules it out is the other thing the gate said at 2x: native and
-sandbox agreed, a state reopened in a new host agreed, and **a load around
-every frame did not** - the renderer is made again from the console's
-memory after a load, that memory holds the pictures at the console's size,
-and the frames drawn on from there are not the frames a run that never
-loaded draws. At 1x the round trip is exact, which is the whole of how this
-core's GPU states work. A tool that rewinds cannot offer a resolution a
-rewind changes the run at, so the drawing path takes a scale (`Machine::
-scale`, `kMaxScale`) and nothing sets it. What it would take is what the
-other GPU cores got in chimera#190: a state that holds the larger pictures.
 The texture filter and the forced sampling fail the owner's test and stay
 off.
 
@@ -220,6 +206,101 @@ equally empty outputs and said PASS. Every comparison of two runs now asks
 first that the run reported a frame (`alive`), and compares the frames
 reported and not the files (`same`) - the sandbox's host says a line of its
 own on the same descriptor when invisible memory is first used.
+
+## Internal resolution (user-decided, 2026-10-10, chimera#223)
+
+`Internal Resolution` (1x to 4x) makes the OpenGL renderer draw at a
+multiple of the console's resolution. It was measured on 2026-10-09 and left
+out, because a savestate loaded at 2x did not give the same run back. The
+reporter asked for it and the owner said to do it now. This section says
+what was wrong and how it was fixed.
+
+**It is a setting of the machine, not only of the picture.** At the end of
+every frame the core writes what the GPU drew into the console's memory, at
+the console's size. Scaled down from a 2x drawing, those bytes are not the
+bytes a 1x frame leaves. So the RAM differs between resolutions and a movie
+wants the resolution it was made with. The setting's description says so.
+
+**Why a load changed the run.** After every load the core throws the
+renderer away and makes it again (see "The GPU bridge"). At 1x the new
+renderer fills its surface cache from the console's memory, which holds
+every surface exactly. Above 1x the console's memory only holds the
+scaled-down copies; the full-size pictures existed only as textures on the
+graphics card. The rebuilt renderer scaled the small copies back up, which
+are not the pixels that were drawn, and everything drawn on top of them
+came out slightly different.
+
+**The fix: the state carries the surface cache** (patch 0015,
+`waterbox/azahar-surfaces.cpp`). Above 1x:
+
+- Before the engine takes a state it calls the core's `StateSaving` export.
+  The core walks every surface registered in Azahar's rasterizer cache and
+  writes it into a block of the core's own memory: its parameters, its
+  flags, which address ranges of it are valid, and its pixels read back from
+  the card at full size. That block is ordinary memory, so it is part of the
+  state.
+- After a load, once the renderer has been made again, the core re-creates
+  each surface from the block, in the order they were first registered, and
+  uploads its pixels.
+- All registered surfaces are kept, including ordinary 1x textures, not only
+  the upscaled ones. Which surfaces the cache holds decides what it does
+  next (for example which existing surface a new framebuffer is laid over),
+  so a cache rebuilt with only some of them could behave differently later.
+- At 1x nothing of this runs. The block is not even mapped.
+
+To keep states small and saving fast, a surface keeps its place in the
+block for as long as it stays registered, a surface whose modification
+counter has not moved is not read again, and what is read is compared with
+the block one memory page at a time so only pages that changed are written
+(a state is stored as the pages that changed). The save path allocates
+nothing: taking a state must not change the machine, the heap included.
+
+Limits: the block is 1 GiB of address space (pages are only committed when
+written) and holds up to 8192 surfaces. If something does not fit, the core
+says so once on stderr and those surfaces are rebuilt from the console's
+memory after a load, as before the fix.
+
+**Measured on Mesa llvmpipe** (the test script's software GL; "straight" is
+a run that never loads, "told" loads a state around every frame, "untold"
+does the same with `StateSaving` not called, which is the old behaviour):
+
+| game, resolution, frames | told vs straight | untold vs straight | state size, untold -> told |
+|---|---|---|---|
+| Dark Witch, 2x, 300 | same | differs from frame 90 | 128 -> 135 MB |
+| Dark Witch, 4x, 900 | same | differs from frame 90 | 137 -> 176 MB |
+| Cars 2, 2x, 2400 | same | differs from frame 1650 | 163 -> 182 MB |
+| Mario & Luigi, 3x, 900 | same | same (nothing in these frames shows it) | 227 -> 259 MB |
+| Drancia Saga, 4x, 600 | same | same (nothing in these frames shows it) | 137 -> 185 MB |
+
+In all five, a state saved in one process and loaded in a new one also gave
+the straight run, and the native build and the sandbox agreed. "Same" means
+the RAM, picture and audio digests of every 30th frame are equal.
+
+**Measured on a real card** (GTX 1060, Windows, NVIDIA 581.42, the engine's
+headless runner; Cars 2 with a movie that presses A and touches the screen
+until it is in a race, which it is from about frame 3000). At 2x and at 4x,
+each of these ended with the same FCRAM, the same VRAM and the same picture
+at frame 3650 as a run of 3700 frames that never took a state:
+
+- the same run with a state saved at frame 3400;
+- that state opened in a new process and run to frame 3700;
+- the same again with a state saved and loaded around every frame;
+- at 2x, twenty rewinds from frame 3700 back to 3400 through the greenzone.
+
+With the engine told not to call `StateSaving`
+(`CHIMERA_NO_STATE_SAVING=1`), the load-every-frame run ended with another
+VRAM and another picture at both resolutions. At 2x the twelve frames drawn
+after a greenzone load were each the picture they had been (0.00% of pixels
+differ); untold, the first differed in 59% of its pixels and the picture
+was not right until the sixth.
+
+What it costs on that card: 3700 frames take 62 s at 2x and 114 s at 4x
+with no states taken. With a state stored on every single frame at 2x,
+3620 frames took 145 s told and 102 s untold, so about 12 ms for each state
+taken in a 3D scene. A saved state was 202 MB at 2x and 238 MB at 4x.
+
+Not tested: 3x on a real card (only on llvmpipe), other drivers, and
+TAStudio itself (the runs above are the headless runner).
 
 ## Lag
 

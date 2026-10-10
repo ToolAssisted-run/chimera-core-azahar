@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include <sys/mman.h>
+
 #include <emulibc.h>
 #include <initializer_list>
 
@@ -196,6 +198,32 @@ ECL_EXPORT int Init(void)
     if (wbx_setting_str("username", name, sizeof name) > 0)
       m.username = name;
   }
+  if (wbx_setting_str("internal_resolution", val, sizeof val) > 0)
+  {
+    const int scale = OneOf(val, {"1x", "2x", "3x", "4x"});
+    if (scale < 0)
+      return Refuse("no such internal resolution: %s", val);
+    m.scale = scale + 1;
+  }
+  // Above the console's resolution the OpenGL renderer's surfaces are copied
+  // into the core's own memory before every state (azahar-surfaces.cpp): a
+  // block of ordinary memory, which a state carries, and a scratch one it does
+  // not. NOW and not on first use: whether a page is mapped at all is part of
+  // every state, so memory taken after the first state exists is unmapped
+  // again by loading it. Address space, not memory - a page is committed when
+  // it is first written.
+  if (m.opengl && m.scale > 1)
+  {
+    static const size_t kBlock = static_cast<size_t>(1) << 30, kScratch = static_cast<size_t>(4) << 20;
+    void* block = mmap(nullptr, kBlock, PROT_READ | PROT_WRITE,
+                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    void* scratch = alloc_invisible(kScratch);
+    if (block != MAP_FAILED && scratch)
+      ChimeraAzahar::SurfaceMemory(block, kBlock, scratch, kScratch);
+    else
+      fprintf(stderr, "[azahar] no memory to keep the renderer's surfaces in: a state loaded "
+                      "above 1x draws on from the console's memory\n");
+  }
   // The picture. A value this build does not know is an error rather than a
   // default: a project that asks for a layout gets that layout or is told.
   if (wbx_setting_str("layout", val, sizeof val) > 0)
@@ -269,6 +297,13 @@ ECL_EXPORT void SetGpuBridge(uint64_t addr)
 ECL_EXPORT void StateLoaded(void)
 {
   ChimeraAzahar::StateLoaded();
+}
+
+// The engine calls this before every state it takes of the machine, between
+// frames (see StateSaving in azahar-driver.cpp).
+ECL_EXPORT void StateSaving(void)
+{
+  ChimeraAzahar::StateSaving();
 }
 
 ECL_EXPORT int InputWasRead(void)

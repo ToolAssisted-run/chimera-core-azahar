@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "azahar-driver.h"
+#include "azahar-surfaces.h"
 
 #include <algorithm>
 #include <atomic>
@@ -590,8 +591,28 @@ void CheckGLContext()
     // made here (the disk cache itself is off: nothing is read)
     std::atomic_bool stop{false};
     system.GPU().Renderer().Rasterizer()->LoadDefaultDiskResources(stop, nullptr);
+    // Above the console's resolution the console's memory holds the pictures
+    // scaled down: the surfaces themselves come back from the state
+    if (Settings::values.resolution_factor.GetValue() > 1)
+      PutBackSurfaces();
   }
   g_glContext = live;
+}
+
+// Before every state the engine takes, between frames. At the console's own
+// resolution there is nothing to do: the frame ended with a flush, and the
+// console's memory holds every surface exactly. Above it, it holds them scaled
+// down, and the surfaces go into the state as they are on the card.
+// After a load and before the next frame the renderer's objects are those of a
+// context that is gone: nothing can be read from them, and nothing needs to be -
+// the block came back with the state, and is what that state's machine drew.
+void StateSaving()
+{
+  if (!g_booted || !g_gl || Settings::values.resolution_factor.GetValue() <= 1)
+    return;
+  if (g_stateLoaded || ChimeraGL::ContextId() != g_glContext)
+    return;
+  KeepSurfaces();
 }
 
 void Frame()

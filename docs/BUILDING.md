@@ -305,6 +305,12 @@ them absent, none of the legs below runs:
   `drancia.cci`: the OpenGL renderer through a headless EGL context (Mesa's
   llvmpipe in CI), native == sandbox, the fall back to the software renderer
   when no bridge is handed over, and states through a renderer rebuild.
+- internal resolution on `darkwitch.cci`: at 2x the picture is 800x960 and
+  the RAM is not the 1x run's; native == sandbox; a state loaded around
+  every frame, and one moved into a new host, give the run that never
+  loaded; the same loads without the `StateSaving` call (`run-wbx
+  --no-state-saving`) must differ, which is this test's own control; a
+  resolution the build does not offer is refused.
 
 Every comparison has a negative control beside it. Run the full gate, with
 the games, before pushing: CI cannot.

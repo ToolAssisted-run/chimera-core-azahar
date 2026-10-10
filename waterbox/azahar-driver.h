@@ -27,14 +27,12 @@ struct Machine
   std::string username;
 
   // How many times the console's own resolution the OpenGL renderer draws
-  // at. NOT OFFERED (kMaxScale is 1, and no setting reaches this): measured
-  // at 2x, each frame's pictures come back into the console's memory brought
-  // down from the larger drawing - other bytes than a 1x frame leaves - and,
-  // worse, a state loaded at 2x does not give the run back: the renderer is
-  // made again from the console's memory, which holds the pictures at the
-  // console's size, so the frames after a load are not the frames a run
-  // without one draws (docs/PLAN.md). The drawing path takes any scale; what
-  // is missing is a state that holds the larger pictures.
+  // at, 1 to kMaxScale. THE MACHINE, unlike the picture's settings below: at
+  // 2x each frame's pictures come back into the console's memory brought down
+  // from the larger drawing - other bytes than a 1x frame leaves there - so a
+  // movie made at one scale is not a movie at another. Above 1 a state has to
+  // hold the larger pictures themselves (azahar-surfaces.cpp), or a load
+  // would not give the run back.
   int scale = 1;
 
   // ---- the picture: none of these is the machine (the gate holds each to
@@ -51,7 +49,7 @@ struct Machine
 
 // The largest picture any of the above makes, a side: two screens side by
 // side at the highest scale.
-constexpr int kMaxScale = 1;
+constexpr int kMaxScale = 4;
 constexpr int kMaxSide = (400 + 320) * kMaxScale;
 
 /// Where the picture and its scratch row buffer live: `pixels` 32-bit pixels
@@ -59,6 +57,14 @@ constexpr int kMaxSide = (400 + 320) * kMaxScale;
 /// the sandbox keeps them out of every savestate (they are remade every
 /// frame). Null: the heap.
 extern uint32_t* (*VideoMemory)(size_t pixels);
+
+/// Where the OpenGL renderer's surfaces are kept for a savestate, above the
+/// console's resolution (azahar-surfaces.cpp): `block` is ordinary memory, in
+/// every state, and may be address space nothing has touched yet; `scratch` is
+/// memory no state carries, 4 MiB or more. Set before Init, and at the same
+/// point of every run: whether memory is mapped is part of a state. Without
+/// it a state loaded above 1x draws on from the console's memory.
+void SurfaceMemory(void* block, size_t blockBytes, void* scratch, size_t scratchBytes);
 
 /// Boot. `rom` is the game's path in the machine's filesystem (see
 /// chimera-fs-host.h). Returns false with Error() set.
@@ -70,6 +76,8 @@ void SetLogLevel(int level);  // Common::Log::Level; default Critical
 void Frame();
 /// The engine loaded a state into the machine (the StateLoaded export).
 void StateLoaded();
+/// The engine is about to take a state of the machine (the StateSaving export).
+void StateSaving();
 /// Which renderer is drawing: "software" or "opengl".
 const char* Renderer();
 bool InputWasRead();

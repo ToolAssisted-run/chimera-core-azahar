@@ -41,7 +41,16 @@ All of them are part of the machine: a movie needs the same values.
   machine) or `opengl-hw`, Azahar's OpenGL renderer on the real GPU through
   the bridge - many times faster, but the GPU's pictures reach the console's
   memory, so a movie recorded with it replays only on the same driver.
+- **Internal Resolution**: 1x (default) to 4x, with `opengl-hw` only. It
+  changes what the game reads back from the GPU, so a movie wants the value
+  it was made with. Above 1x savestates are larger.
+- **User Name**: the console's own, which games read.
 - **Motion Controls**: whether the accelerometer and gyroscope take input.
+
+The picture only, not the machine: **Screen Layout** (stacked, single, large,
+side-by-side), **Swap Screens**, **Upright Screens**, **Large Screen
+Proportion** and **Linear Filtering**. A touch is a place in the picture, so
+a movie that touches wants the layout it was made with.
 
 ## Save data
 

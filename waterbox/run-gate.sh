@@ -91,7 +91,7 @@ else
 	report SKIP "the builds (-q)" "using what build/ and waterbox/bin hold"
 fi
 stale=""
-for src in "$here"/azahar-driver.cpp "$here"/wbx-entry.cpp "$here"/chimera-fs.cpp "$here"/zip-read.cpp "$here"/guest-syscalls.cpp; do
+for src in "$here"/azahar-driver.cpp "$here"/azahar-surfaces.cpp "$here"/wbx-entry.cpp "$here"/chimera-fs.cpp "$here"/zip-read.cpp "$here"/guest-syscalls.cpp; do
 	[ "$core" -nt "$src" ] || stale="$stale $(basename "$src")"
 done
 if [ -f "$core" ] && [ -z "$stale" ]; then
@@ -551,9 +551,6 @@ else
 fi
 
 # The same claims of the OpenGL renderer, which draws the layout itself.
-# (Internal resolution is not here because it is not offered: measured with
-# this leg's own runs at 2x, the RAM differed from 1x and - what rules it out -
-# a load around every frame gave another run than no load. docs/PLAN.md.)
 if [ -f "$roms/darkwitch.cci" ]; then
 	glay() {
 		n="$1"; workdir "$work/glay-$n" darkwitch.cci "$2"; shift 2
@@ -584,6 +581,74 @@ if [ -f "$roms/darkwitch.cci" ]; then
 	fi
 else
 	report SKIP "darkwitch: the GPU's layout legs" "no darkwitch.cci in $roms"
+fi
+
+# ------------------------------------------------ 8. internal resolution
+# chimera#223. Above 1x the OpenGL renderer draws larger than the console, and
+# two things follow that these tests hold it to.
+# It is the machine, and declared so: what was drawn goes back into the
+# console's memory scaled down, which is other bytes than a 1x frame leaves.
+# And a state has to hold the larger pictures themselves (azahar-surfaces.cpp):
+# the renderer is made again after every load, and from the console's memory
+# alone it would draw on from the scaled-down ones. So a run loaded around
+# every frame, and one moved into a new host half way, must be the run that
+# never stopped - and the same loads with the core NOT told a state is coming
+# (--no-state-saving) must not be, or the test has stopped testing anything.
+if [ -f "$roms/darkwitch.cci" ]; then
+	g="$work/gl2x"
+	workdir "$g" darkwitch.cci '{"renderer":"opengl-hw","internal_resolution":"2x"}'
+	gpurun "$native" "$g" --frames 300 --report 30 --exercise > "$work/gl2x.n" 2>"$work/gl2x.ne" &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise > "$work/gl2x.p" 2>"$work/gl2x.pe" &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --rerecord > "$work/gl2x.r" 2>"$work/gl2x.re" &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --rerecord --no-state-saving > "$work/gl2x.c" 2>/dev/null &
+	gpurun "$wbxrun" "$core" "$g" --frames 300 --report 30 --exercise --session > "$work/gl2x.s" 2>"$work/gl2x.se" &
+	wait
+	# the RAM of every reported frame, not of the last one: at frame 300 this
+	# game's memory happens to be the same at both resolutions
+	rams() { stream "$1" | awk '{print $2, $4}'; }
+	two="$(last "$work/gl2x.p")"
+	if grep -q "^gpu bridge: .*Core Profile" "$work/gl2x.pe" && [ "$(field "$two" vid)" = "800x960" ] \
+		&& alive "$work/gl-darkwitch.p" && [ "$(rams "$work/gl2x.p")" != "$(rams "$work/gl-darkwitch.p")" ]; then
+		report PASS "darkwitch: GPU at 2x: the picture is 800x960" "and the RAM is not the 1x run's: the resolution is part of the machine"
+	else
+		report FAIL "darkwitch: GPU at 2x: the picture is 800x960" "$(field "$two" vid); or the RAM is the 1x run's at every reported frame"
+	fi
+	if alive "$work/gl2x.n" && same "$work/gl2x.n" "$work/gl2x.p"; then
+		report PASS "darkwitch: GPU at 2x: native == sandbox (300 frames, exercised)"
+	else
+		report FAIL "darkwitch: GPU at 2x: native == sandbox (300 frames, exercised)"
+	fi
+	if alive "$work/gl2x.p" && same "$work/gl2x.p" "$work/gl2x.r"; then
+		report PASS "darkwitch: GPU at 2x: a load every frame changes nothing" "the state holds the surfaces"
+	else
+		report FAIL "darkwitch: GPU at 2x: a load every frame changes nothing" \
+			"first difference: $(diff "$work/gl2x.p" "$work/gl2x.r" 2>&1 | awk 'NR==2' | cut -c1-60)"
+	fi
+	if alive "$work/gl2x.c" && ! same "$work/gl2x.p" "$work/gl2x.c"; then
+		report PASS "darkwitch: GPU at 2x: untold, the same loads change the run" "the control: this is what the surfaces in the state are for"
+	else
+		report FAIL "darkwitch: GPU at 2x: untold, the same loads change the run" "the loads no longer show the difference: find a scene that does"
+	fi
+	if alive "$work/gl2x.p" && same "$work/gl2x.p" "$work/gl2x.s"; then
+		report PASS "darkwitch: GPU at 2x: a state reopens in a new host and draws on"
+	else
+		report FAIL "darkwitch: GPU at 2x: a state reopens in a new host and draws on"
+	fi
+	if grep -q "no case for" "$work/gl2x.pe" "$work/gl2x.re" "$work/gl2x.se"; then
+		report FAIL "darkwitch: GPU at 2x: every call the renderer makes is answered" "$(grep -h 'no case for' "$work/gl2x.pe" "$work/gl2x.re" "$work/gl2x.se" | head -1)"
+	else
+		report PASS "darkwitch: GPU at 2x: every call the renderer makes is answered"
+	fi
+	# a resolution this build does not offer is refused, not defaulted
+	workdir "$work/gl9x" darkwitch.cci '{"renderer":"opengl-hw","internal_resolution":"9x"}'
+	gpurun "$native" "$work/gl9x" --frames 30 --report 30 > "$work/gl9x.n" 2>"$work/gl9x.ne" || true
+	if grep -q "no such internal resolution: 9x" "$work/gl9x.ne" && [ ! -s "$work/gl9x.n" ]; then
+		report PASS "darkwitch: a resolution it cannot give is refused" "and says which"
+	else
+		report FAIL "darkwitch: a resolution it cannot give is refused" "$(tail -1 "$work/gl9x.ne" | cut -c1-60)"
+	fi
+else
+	report SKIP "darkwitch: the internal resolution legs" "no darkwitch.cci in $roms"
 fi
 
 [ "$ran_any" -eq 1 ] || echo "no game in $roms: the machine legs were skipped (see the header of this script)"

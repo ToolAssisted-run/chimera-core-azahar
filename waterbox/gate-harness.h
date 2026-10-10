@@ -142,7 +142,8 @@ static int gate_parse_opts(int argc, char **argv, int first, struct gate_opts *o
 		else if (!strcmp(argv[i], "--vid-out") && i + 1 < argc) o->vidOut = argv[++i];
 		else if (!strcmp(argv[i], "--vid-at") && i + 1 < argc) o->vidAt = strtol(argv[++i], 0, 0);
 		else if (!strcmp(argv[i], "--savedata-out") && i + 1 < argc) o->savedataOut = argv[++i];
-		else if (!strcmp(argv[i], "--rerecord") || !strcmp(argv[i], "--session")) ; /* run-wbx's */
+		else if (!strcmp(argv[i], "--rerecord") || !strcmp(argv[i], "--session")
+			|| !strcmp(argv[i], "--no-state-saving")) ; /* run-wbx's */
 		else
 		{
 			fprintf(stderr, "unknown option %s\n", argv[i]);
