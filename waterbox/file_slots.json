@@ -1,5 +1,5 @@
 {
-  "_comment": "A 3DS project is one decrypted game, and whatever it already saved.",
+  "_comment": "This file lists the kinds of file a 3DS project can hold. Chimera's New Project window is built from it. A project is one decrypted game, and optionally what the game already saved.",
   "slots": [
     {
       "id": "game",
@@ -14,7 +14,7 @@
         "3dsx",
         "elf"
       ],
-      "help": "A DECRYPTED dump: a cartridge (.3ds/.cci), an executable content (.cxi/.app), or homebrew (.3dsx/.elf). Azahar does not decrypt; an encrypted dump is a load error that says so. An old dump whose header still says 'encrypted' after it was decrypted is recognised and runs."
+      "help": "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an executable (.cxi or .app) or homebrew (.3dsx or .elf). Azahar does not decrypt. An encrypted dump is refused with a message that says so. An old dump that was decrypted but whose header still says 'encrypted' is recognised and runs."
     },
     {
       "id": "savedata",
@@ -24,7 +24,7 @@
       "formats": [
         "zip"
       ],
-      "help": "What the game already saved, as Emulator > Export Save Data... wrote it: a .zip of the SD card's Nintendo 3DS folder (the game's save archive and extra data). It goes back onto the machine's SD card before the game starts."
+      "help": "What the game already saved, as Emulator > Export Save Data... wrote it. It is a .zip of the SD card's 'Nintendo 3DS' folder (the game's save data and extra data). It is put back onto the machine's SD card before the game starts."
     }
   ]
 }

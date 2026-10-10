@@ -92,7 +92,12 @@ config = {
             "type": "enum",
             "options": ["new3ds", "old3ds"],
             "default": "new3ds",
-            "description": "Which console: a New Nintendo 3DS (256 MB, a faster CPU mode, the ZL and ZR buttons and the C-Stick) or the original Nintendo 3DS. Azahar's default is the New 3DS, which runs every game; a game made for the old one may time itself differently on the new. Part of the machine: a movie needs the same model.",
+            "description": "Which console this is: a New Nintendo 3DS (256 MB of "
+                "memory, a faster processor mode, the ZL and ZR buttons and "
+                "the C-Stick) or the original Nintendo 3DS. Azahar's default"
+                " is the New 3DS, which runs every game. A game made for the"
+                " original model may be timed differently on the new one. It"
+                " is part of the machine, so a movie needs the same model.",
         },
         {
             "name": "region",
@@ -100,7 +105,8 @@ config = {
             "type": "enum",
             "options": ["auto", "jpn", "usa", "eur", "aus", "chn", "kor", "twn"],
             "default": "auto",
-            "description": "The console's region. 'auto' takes the game's own. Part of the machine: a game reads it.",
+            "description": "The console's region. 'auto' uses the game's own region. A "
+                "game can read it, so it is part of the machine.",
         },
         {
             "name": "rtc_start",
@@ -109,7 +115,13 @@ config = {
             "default": 946684800,
             "min": 946684800,
             "max": 2145916800,
-            "description": "What the console's clock reads when the machine starts, in seconds since 1970-01-01 UTC. The default is 2000-01-01 00:00:00 - the earliest a 3DS can be set to. The clock then runs with the machine, never with the host. A game that seeds its randomness or its calendar from the clock plays differently for a different value, so it is part of the machine.",
+            "description": "What the console's clock shows when the machine starts, in "
+                "seconds since 1970-01-01 (UTC). The default is 2000-01-01 "
+                "00:00:00, the earliest date a 3DS can be set to. After the "
+                "start the clock runs with the emulated console and never "
+                "with your computer. A game that takes its random numbers or"
+                " its calendar from the clock plays differently with another"
+                " value, so it is part of the machine.",
         },
         {
             "name": "cpu",
@@ -117,7 +129,11 @@ config = {
             "type": "enum",
             "options": ["jit", "interpreter"],
             "default": "jit",
-            "description": "How the ARM11 is emulated: dynarmic's recompiler (fast) or Azahar's interpreter. Both are meant to compute the same machine; the interpreter is there to tell a recompiler bug from a game's.",
+            "description": "How the console's ARM11 processor is emulated: with "
+                "dynarmic's recompiler, which is fast, or with Azahar's "
+                "interpreter. Both are meant to give the same result. The "
+                "interpreter is there to find out whether a problem comes "
+                "from the recompiler or from the game.",
         },
         {
             "name": "cpu_clock",
@@ -126,7 +142,10 @@ config = {
             "default": 100,
             "min": 5,
             "max": 400,
-            "description": "The ARM11's clock as a percentage of the console's own (Azahar's CPU clock setting). Above 100 a game that slows down slows down less. It changes what the machine computes, so a movie needs the same value.",
+            "description": "The speed of the ARM11 processor as a percentage of the "
+                "real console's (Azahar's CPU clock setting). Above 100, a "
+                "game that slows down in busy scenes slows down less. It "
+                "changes how the game runs, so a movie needs the same value.",
         },
         {
             "name": "renderer",
@@ -134,7 +153,18 @@ config = {
             "type": "enum",
             "options": ["software", "opengl-hw"],
             "default": "software",
-            "description": "Which renderer draws the picture. 'software' is Azahar's own rasteriser and the default: it runs entirely inside the sandbox, so the picture - and everything the game reads back from what it drew - is the same on every machine. 'opengl-hw' is Azahar's OpenGL renderer driving a REAL GPU through the bridge: many times faster, but the GPU is outside the sandbox and different on every machine, the pictures a game reads back land in the console's memory, and a movie recorded this way replays only on the same driver. On a machine that offers no GL context the core draws with the software renderer and says so.",
+            "description": "Which renderer draws the picture. 'software' is Azahar's "
+                "own software renderer and the default. It runs completely "
+                "inside the sandbox, so the picture, and anything the game "
+                "reads back from it, is the same on every computer. 'opengl-"
+                "hw' is Azahar's OpenGL renderer drawing on your REAL "
+                "graphics card through the bridge. It is many times faster. "
+                "The graphics card is outside the sandbox and differs "
+                "between computers, and what a game reads back from its "
+                "picture goes into the console's memory, so a movie recorded"
+                " this way plays back only on the same graphics driver. On a"
+                " computer that offers no OpenGL the core draws in software "
+                "and says so.",
         },
         {
             "name": "internal_resolution",
@@ -142,14 +172,28 @@ config = {
             "type": "enum",
             "options": ["1x", "2x", "3x", "4x"],
             "default": "1x",
-            "description": "How many times the console's own resolution the OpenGL renderer draws at (Azahar's Internal Resolution): 2x makes the stacked picture 800x960. The software renderer always draws at 1x. It is part of the machine and not only the picture: what the GPU drew goes back into the console's memory scaled down, which leaves other bytes there than a 1x frame does, so a movie wants the resolution it was made with. Above 1x every savestate also holds the renderer's pictures at their full size, which makes states larger and taking one slower.",
+            "description": "How many times the console's own resolution the OpenGL "
+                "renderer draws at (Azahar's Internal Resolution). At 2x the"
+                " stacked picture is 800x960. The software renderer always "
+                "draws at 1x. This is part of the machine and not only of "
+                "the picture. What the graphics card draws is written back "
+                "into the console's memory reduced to the console's size, "
+                "and those bytes differ from the ones a 1x frame leaves. A "
+                "movie therefore needs the resolution it was made with. "
+                "Above 1x every savestate also holds the renderer's pictures"
+                " at full size, so states are larger and saving one takes "
+                "longer.",
         },
         {
             "name": "username",
             "display": "User Name",
             "type": "string",
             "default": "",
-            "description": "The name in the console's own settings, one to ten characters. Games read it - a save file's owner, a greeting - so it is part of the machine, and a movie made with one name wants that name. Empty is Azahar's own, AZAHAR.",
+            "description": "The user name in the console's own settings, one to ten "
+                "characters. Games read it, for example as the owner of a "
+                "save file or in a greeting. It is part of the machine, so a"
+                " movie made with one name needs that name. Left empty, it "
+                "is Azahar's default, AZAHAR.",
         },
         {
             "name": "layout",
@@ -157,21 +201,36 @@ config = {
             "type": "enum",
             "options": ["stacked", "single", "large", "side-by-side"],
             "default": "stacked",
-            "description": "How the two screens are put into one picture (Azahar's Screen Layout). stacked: the top screen above the bottom one, 400x480. single: the top screen alone, 400x240. large: one screen at its own size and the other small beside it (Large Screen Proportion says how small). side-by-side: both at their own size, 720x240. Swap Screens exchanges the two in any of them. It is the picture only, with one consequence to know: the Touch axes are a place in the picture, so a touch means the place the layout puts the bottom screen at - a movie that touches wants the layout it was made with, and with the top screen alone nothing can be touched.",
+            "description": "How the two screens are placed in one picture (Azahar's "
+                "Screen Layout). 'stacked' puts the top screen above the "
+                "bottom one (400x480). 'single' shows the top screen alone "
+                "(400x240). 'large' shows one screen at full size with the "
+                "other one small next to it, and Large Screen Proportion "
+                "says how small. 'side-by-side' shows both at full size "
+                "(720x240). Swap Screens exchanges the two screens in any "
+                "layout. The layout changes the picture only, with one thing"
+                " to know. The Touch axes are a position in the picture, so "
+                "a touch lands where the layout puts the bottom screen. A "
+                "movie that uses touch needs the layout it was made with, "
+                "and with the top screen alone nothing can be touched.",
         },
         {
             "name": "swap_screens",
             "display": "Swap Screens",
             "type": "bool",
             "default": False,
-            "description": "The bottom screen takes the top one's place in the layout and the top one the bottom's: with single, the bottom screen alone (320x240); with large, the bottom screen is the large one.",
+            "description": "Exchanges the two screens in the layout. With 'single', the"
+                " bottom screen is shown alone (320x240). With 'large', the "
+                "bottom screen is the large one.",
         },
         {
             "name": "upright",
             "display": "Upright Screens",
             "type": "bool",
             "default": False,
-            "description": "The console turned on its side, for the games held like a book: the picture is turned a quarter and its width and height change places.",
+            "description": "Shows the console turned on its side, for games that are "
+                "held like a book. The picture is turned a quarter turn, and"
+                " its width and height change places.",
         },
         {
             "name": "large_screen_proportion",
@@ -180,49 +239,65 @@ config = {
             "default": 4,
             "min": 1,
             "max": 16,
-            "description": "With the large layout, how many times larger the large screen is than the small one (Azahar's default is 4).",
+            "description": "With the 'large' layout, how many times larger the large "
+                "screen is than the small one. Azahar's default is 4.",
         },
         {
             "name": "linear_filter",
             "display": "Linear Filtering",
             "type": "bool",
             "default": True,
-            "description": "Whether the OpenGL renderer smooths each screen when it scales it into the picture (Azahar's Enable Linear Filtering). It shows where a screen is not at a whole multiple of its own size - the small screen of the large layout. The picture only.",
+            "description": "Whether the OpenGL renderer smooths a screen when it scales"
+                " it into the picture (Azahar's Enable Linear Filtering). "
+                "The difference shows where a screen is not at a whole "
+                "multiple of its own size, such as the small screen of the "
+                "'large' layout. It changes the picture only.",
         },
         {
             "name": "motion",
             "display": "Motion Controls",
             "type": "bool",
             "default": False,
-            "description": "Whether the accelerometer and gyroscope take input (the six Accel and Gyro axes). Off, the console lies still and flat, and those axes leave the input roll.",
+            "description": "Whether the motion sensors (accelerometer and gyroscope) "
+                "take input through the six Accel and Gyro axes. With this "
+                "off the console lies still and flat, and those axes are "
+                "removed from the input columns.",
         },
         {
             "name": "aes_keys",
             "display": "AES Keys",
             "type": "bool",
             "default": False,
-            "description": "Whether the project carries the console's AES keys (aes_keys.txt, dumped from your own console). A decrypted game needs none, and this package ships none. They are what installing and running .cia content, amiibo and some online-account features need.",
+            "description": "Whether the project includes the console's AES keys "
+                "(aes_keys.txt, dumped from your own console). A decrypted "
+                "game needs none, and this package includes none. They are "
+                "needed to install and run .cia content, for amiibo and for "
+                "some online-account features.",
         },
         {
             "name": "seeddb",
             "display": "Seed Database",
             "type": "bool",
             "default": False,
-            "description": "Whether the project carries seeddb.bin, the per-title seeds some eShop titles are encrypted with. Only with AES Keys.",
+            "description": "Whether the project includes seeddb.bin, the per-game seeds"
+                " that some eShop games are encrypted with. It is only used "
+                "together with AES Keys.",
         },
     ],
     "firmware": [
         {
             "id": "aes_keys.txt",
             "display": "AES keys (aes_keys.txt)",
-            "description": "The console's AES keys in Azahar's text format, dumped from your own console. Azahar looks for them in its sysdata folder; the machine finds them there.",
+            "description": "The console's AES keys in Azahar's text format, dumped from"
+                " your own console. Azahar looks for them in its system data"
+                " folder, and the core puts them there.",
             "name": "aes_keys.txt",
             "requiredWhen": {"setting": "aes_keys", "is": True},
         },
         {
             "id": "seeddb.bin",
             "display": "Seed database (seeddb.bin)",
-            "description": "The title seeds some eShop titles are encrypted with.",
+            "description": "The seeds that some eShop games are encrypted with.",
             "name": "seeddb.bin",
             "requiredWhen": {"setting": "seeddb", "is": True},
         },
@@ -230,7 +305,9 @@ config = {
 }
 
 slots = {
-    "_comment": "A 3DS project is one decrypted game, and whatever it already saved.",
+    "_comment": "This file lists the kinds of file a 3DS project can hold. Chimera's"
+        " New Project window is built from it. A project is one decrypted "
+        "game, and optionally what the game already saved.",
     "slots": [
         {
             "id": "game",
@@ -238,7 +315,11 @@ slots = {
             "min": 1,
             "max": 1,
             "formats": GAME_FORMATS,
-            "help": "A DECRYPTED dump: a cartridge (.3ds/.cci), an executable content (.cxi/.app), or homebrew (.3dsx/.elf). Azahar does not decrypt; an encrypted dump is a load error that says so. An old dump whose header still says 'encrypted' after it was decrypted is recognised and runs.",
+            "help": "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an "
+                "executable (.cxi or .app) or homebrew (.3dsx or .elf). "
+                "Azahar does not decrypt. An encrypted dump is refused with "
+                "a message that says so. An old dump that was decrypted but "
+                "whose header still says 'encrypted' is recognised and runs.",
         },
         {
             "id": "savedata",
@@ -246,7 +327,10 @@ slots = {
             "min": 0,
             "max": 1,
             "formats": ["zip"],
-            "help": "What the game already saved, as Emulator > Export Save Data... wrote it: a .zip of the SD card's Nintendo 3DS folder (the game's save archive and extra data). It goes back onto the machine's SD card before the game starts.",
+            "help": "What the game already saved, as Emulator > Export Save "
+                "Data... wrote it. It is a .zip of the SD card's 'Nintendo "
+                "3DS' folder (the game's save data and extra data). It is "
+                "put back onto the machine's SD card before the game starts.",
         },
     ],
 }
