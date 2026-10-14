@@ -15,6 +15,9 @@
 #
 # The machine legs need games, which cannot ship: put decrypted dumps (or links
 # to them) in tests/roms-local, or point AZAHAR_ROMS at a folder holding them.
+# One program needs no game: tests/homebrew, built with devkitARM (DEVKITARM)
+# or named by AZAHAR_HOMEBREW, goes through the same machine legs, and is what
+# CI runs.
 # The names the legs look for: darkwitch.cci, drancia.cci, cars2.3ds,
 # mlss.3ds. A game that is not there is SKIPPED, visibly; a gate that ran no
 # machine at all still proves the build and the declarations.
@@ -129,7 +132,7 @@ fi
 # workdir <dir> <game> [settings json]: the files a project would mount
 workdir() {
 	d="$1"; rm -rf "$d"; mkdir -p "$d"
-	ln -s "$roms/$2" "$d/$2"
+	ln -s "${gamedir:-$roms}/$2" "$d/$2"
 	printf '{"game":["%s"]}' "$2" > "$d/slots"
 	[ -n "${3:-}" ] && printf '%s' "$3" > "$d/settings"
 	true
@@ -153,11 +156,29 @@ print(f"{len(got)} buttons ({live} live), {len(axes)} axes")
 PY
 }
 
+# The test script's own 3DS program (tests/homebrew), which needs no game and
+# is what a public CI runner boots (chimera issue 260): built here with
+# devkitARM when DEVKITARM is set, or taken already built from
+# AZAHAR_HOMEBREW. It goes through every check below like a game.
+hbdir="$work/homebrew"
+mkdir -p "$hbdir"
+if [ -n "${AZAHAR_HOMEBREW:-}" ] && [ -f "$AZAHAR_HOMEBREW" ]; then
+	cp "$AZAHAR_HOMEBREW" "$hbdir/chimera-test.3dsx"
+elif [ -n "${DEVKITARM:-}" ] && [ -x "$DEVKITARM/bin/arm-none-eabi-gcc" ]; then
+	make -s -C "$root/tests/homebrew" OUT="$hbdir" > "$work/homebrew.log" 2>&1 || true
+fi
+
 ran_any=0
-for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
+for game in chimera-test.3dsx darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 	name="${game%.*}"
-	if [ ! -f "$roms/$game" ]; then
-		report SKIP "$name: every machine leg" "no $game in $roms"
+	gamedir="$roms"
+	[ "$game" = chimera-test.3dsx ] && gamedir="$hbdir"
+	if [ ! -f "$gamedir/$game" ]; then
+		if [ "$game" = chimera-test.3dsx ]; then
+			report SKIP "$name: every machine leg" "needs devkitARM (DEVKITARM) to build tests/homebrew, or AZAHAR_HOMEBREW=<chimera-test.3dsx>$( [ -s "$work/homebrew.log" ] && echo "; the build said: $(tail -1 "$work/homebrew.log")")"
+		else
+			report SKIP "$name: every machine leg" "no $game in $roms"
+		fi
 		continue
 	fi
 	ran_any=1
@@ -240,6 +261,7 @@ for game in darkwitch.cci drancia.cci mlss.3ds cars2.3ds; do
 		report FAIL "$name: a state reopens in a new host"
 	fi
 done
+gamedir="$roms"
 
 # ------------------------------------------ 3. input, touch, save data (Drancia)
 # Drancia Saga's title menu reads the D-pad and the touch screen: at frame

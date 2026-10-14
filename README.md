@@ -74,7 +74,8 @@ Linux and on Windows.
 [docs/BUILDING.md](docs/BUILDING.md) has every step, and
 [AGENTS.md](AGENTS.md) is the guide for an AI coding agent. See
 `docs/PLAN.md` for the design, and `waterbox/run-gate.sh` for the gate. The
-machine legs need decrypted games in `tests/roms-local` (never committed).
+machine legs need decrypted games in `tests/roms-local` (never committed);
+CI runs them on a small 3DS program of its own (`tests/homebrew`).
 
 ## Licence
 

@@ -104,6 +104,17 @@ jobs:
           [ -f "$mb/build/meson-cpp/build.ninja" ] || meson setup "$mb/build/meson-cpp" "$mb" -Dguest_cpp=true
           meson compile -C "$mb/build/meson-cpp"
 
+      - name: Build the test script's 3DS program
+        # tests/homebrew, which needs no game: the gate boots it through every
+        # machine check (chimera issue 260). Built in devkitPro's own image,
+        # at the one version this names, so CI does not depend on devkitPro's
+        # download servers.
+        run: |
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/tests/homebrew:/src" -w /src \
+            devkitpro/devkitarm@sha256:15b79ce75822c289538d8153da5fa7aafe5e6adc32ad8a575a197beca0f0761b \
+            make OUT=/src/out
+          ls -l tests/homebrew/out/chimera-test.3dsx
+
       - name: Core gate (builds the package)
         # The commit is the core's authoritative version: this build is the one
         # that publishes the artifact, so what it stamps is what a movie can
@@ -112,6 +123,7 @@ jobs:
           CORE_VERSION: ${{ github.sha }}
           CHIMERA_ROOT: ${{ github.workspace }}/chimera-checkout
           MINIBOX_DIR: ${{ github.workspace }}/chimera-checkout/extern/chimera-common-minibox
+          AZAHAR_HOMEBREW: ${{ github.workspace }}/tests/homebrew/out/chimera-test.3dsx
         run: ./waterbox/run-gate.sh
 
       - name: Install the package into the Chimera checkout

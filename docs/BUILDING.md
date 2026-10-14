@@ -279,7 +279,14 @@ The legs that need no game, which are all that run on a public runner:
 - the three declarations are exactly what `waterbox/gen-config.py` writes;
 - the core carries no key blob: the option is off in `configure-flags.sh`
   and the key symbol is absent from `core.wbx`, with a control that the
-  symbol listing is not empty.
+  symbol listing is not empty;
+- the test script's own 3DS program, `tests/homebrew` (`chimera-test.3dsx`),
+  through every machine leg below that a game goes through: built with
+  devkitARM when `DEVKITARM` is set (devkitPro's `3ds-dev`), or taken from
+  `AZAHAR_HOMEBREW`. CI builds it in devkitPro's own Docker image
+  (`devkitpro/devkitarm`, pinned by its digest) and hands it over that way.
+  It draws a moving band on the top screen and shows what the pad holds on
+  the bottom one, and keeps both in memory.
 
 The machine legs need decrypted dumps, which cannot be distributed. Put them,
 or links to them, in `tests/roms-local/` (ignored by git), or point

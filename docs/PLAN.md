@@ -309,6 +309,24 @@ memory; no service call says so. Patch 0008 routes those pages through the
 memory system's watchpoint path (the pointer in the page table is cleared,
 so dynarmic takes the slow path for them) and marks the frame on a read.
 
+## A program of its own in CI (chimera issue 260, 2026-10-14)
+
+A public runner may not hold a game, so CI ran no machine. The owner's
+decision: free programs are built in CI from source. `tests/homebrew` is a
+3DS program written for the test (libctru, zlib licence): the top screen is
+a colour ramp with a band that moves a column a frame, the bottom screen's
+colour is what the pad holds, and the pad's last 64 frames are kept in
+memory. It goes through the same machine legs a game does - alive, native
+deterministic, the host's heap, native == sandbox exercised, the input
+reaches the machine (against an idle run), lag counted, a save and load
+around every frame, a state in a new host - and passes them all.
+
+It is built with devkitARM. devkitPro's download servers refuse scripted
+access, so CI builds it in devkitPro's own Docker image, pinned by digest;
+here devkitARM was installed from the same image's layers. Not covered: the
+GPU renderers (the legs above run the software one), sound, and the touch
+screen.
+
 ## Open
 
 - Phase 3: the GPU bridge. The evaluation's notes: persistent buffer mapping
