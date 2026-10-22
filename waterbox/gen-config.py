@@ -148,6 +148,24 @@ config = {
                 "changes how the game runs, so a movie needs the same value.",
         },
         {
+            "name": "savedata_commit_ms",
+            "display": "Save Data Commit Time (ms)",
+            "type": "int",
+            "default": 100,
+            "min": 0,
+            "max": 10000,
+            "description": "How long, in milliseconds of the console's time, a game "
+                "waits when it commits its save data (writes it out to the "
+                "card for good). A real console takes a while to do that, and"
+                " a game can count on it: Aikatsu! My No.1 Stage! stops on its"
+                " first start if a commit is instant (chimera issue 345). 0 "
+                "answers at once, as Azahar does and as this core did before "
+                "the setting existed: a movie made with such a build needs 0."
+                " The default of 100 is an estimate, not a time measured on a"
+                " console. It changes how the game runs, so a movie needs the"
+                " same value.",
+        },
+        {
             "name": "renderer",
             "display": "Renderer",
             "type": "enum",

@@ -19,7 +19,7 @@
 # or named by AZAHAR_HOMEBREW, goes through the same machine legs, and is what
 # CI runs.
 # The names the legs look for: darkwitch.cci, drancia.cci, cars2.3ds,
-# mlss.3ds. A game that is not there is SKIPPED, visibly; a gate that ran no
+# mlss.3ds, aikatsu.3ds. A game that is not there is SKIPPED, visibly; a gate that ran no
 # machine at all still proves the build and the declarations.
 #
 # Usage: ./run-gate.sh [-r <chimera root>] [-m <minibox dir>] [-q]
@@ -355,6 +355,81 @@ with zipfile.ZipFile('$work/save.zip', 'w', zipfile.ZIP_DEFLATED) as z:
 	fi
 else
 	report SKIP "drancia: input, touch, save data and settings legs" "no drancia.cci in $roms"
+fi
+
+# ------------------------------ 3b. a save-data commit takes the console's time
+# chimera#345: a game that shows a window while it saves can ask the window to
+# close before it has finished opening when the commit answers at once, and
+# then wait for it forever. Committing save data waits the console time the
+# savedata_commit_ms setting holds (default 100 ms, patch 0016).
+#
+# The test program commits once before its first frame and keeps the result
+# and the console ticks it waited in memory, behind the tag COMMITPROBE.
+probe() {
+	python3 - "$1" <<'PY'
+import mmap, struct, sys
+with open(sys.argv[1], "rb") as f:
+    m = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+    i = m.find(b"COMMITPROBE\0")
+    if i < 0:
+        print("none none")
+    else:
+        r, t = struct.unpack_from("<II", m, i + 12)
+        print(f"{r:08x} {t}")
+PY
+}
+if [ -f "$hbdir/chimera-test.3dsx" ]; then
+	wc="$work/commit"
+	got=""
+	for ms in default 0 250; do
+		rm -rf "$wc"; mkdir -p "$wc"
+		cp "$hbdir/chimera-test.3dsx" "$wc/"
+		printf '{"game":["chimera-test.3dsx"]}' > "$wc/slots"
+		[ "$ms" = default ] || printf '{"savedata_commit_ms":%s}' "$ms" > "$wc/settings"
+		"$native" "$wc" --frames 20 --report 20 --dump-domain FCRAM "$wc/fcram.bin" > "$wc/out.log" 2>&1 || true
+		got="$got $ms:$( [ -f "$wc/fcram.bin" ] && probe "$wc/fcram.bin" | tr ' ' ':' )"
+	done
+	rm -rf "$wc"
+	# 268111856 console ticks a second: 100 ms is 26811185 ticks, 250 ms is
+	# 67027964; the call itself adds well under a millisecond (268111)
+	if echo "$got" | python3 -c "
+import sys
+want = {'default': (26811185, 26811185 + 268111), '0': (0, 268111), '250': (67027964, 67027964 + 268111)}
+seen = dict(w.split(':', 1) for w in sys.stdin.read().split())
+for k, (lo, hi) in want.items():
+    r, _, t = seen.get(k, 'none:none').partition(':')
+    if r != '00000000' or not t.isdigit() or not lo <= int(t) < hi:
+        sys.exit(1)
+"; then
+		report PASS "chimera-test: a commit takes the set console time" "setting:result:ticks$got"
+	else
+		report FAIL "chimera-test: a commit takes the set console time" "setting:result:ticks$got"
+	fi
+else
+	report SKIP "chimera-test: a commit takes the set console time" "no chimera-test.3dsx (see the machine legs)"
+fi
+
+# Aikatsu! My No.1 Stage! on its first start: with the default the window
+# closes, "Initialized" is answered with A, and the game goes on to its next
+# screen; with commits answered at once (0) the same run stays on the
+# "Initializing" window, and A does nothing there.
+pic() { stream "$1" | awk -v f="$2" '$2 == f {for (i=1;i<=NF;i++) if ($i=="vid") {print $(i+2); exit}}'; }
+if [ -f "$roms/aikatsu.3ds" ]; then
+	for ms in default 0; do
+		wa="$work/aikatsu-$ms"
+		workdir "$wa" aikatsu.3ds
+		[ "$ms" = default ] || printf '{"savedata_commit_ms":%s}' "$ms" > "$wa/settings"
+		"$native" "$wa" --frames 2000 --report 50 --press 0:1700:6 > "$work/aikatsu.$ms" 2>&1 || true
+	done
+	d1="$(pic "$work/aikatsu.default" 1650)"; d2="$(pic "$work/aikatsu.default" 2000)"
+	z1="$(pic "$work/aikatsu.0" 1650)"; z2="$(pic "$work/aikatsu.0" 2000)"
+	if [ -n "$d1" ] && [ -n "$z1" ] && [ "$d1" != "$d2" ] && [ "$z1" = "$z2" ] && [ "$d1" != "$z1" ]; then
+		report PASS "aikatsu: the first start gets past its save window" "default: $d1 -> $d2 after A; commit 0: stays $z1"
+	else
+		report FAIL "aikatsu: the first start gets past its save window" "default: $d1 -> $d2; commit 0: $z1 -> $z2"
+	fi
+else
+	report SKIP "aikatsu: the first start gets past its save window" "no aikatsu.3ds in $roms"
 fi
 
 # -------------------------------------------------- 4. content the core refuses

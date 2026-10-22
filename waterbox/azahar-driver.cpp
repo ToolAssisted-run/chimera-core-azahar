@@ -30,6 +30,7 @@
 #include "core/frontend/image_interface.h"
 #include "core/frontend/input.h"
 #include "core/hle/service/cfg/cfg.h"
+#include "core/hle/service/fs/fs_user.h"
 #include "core/hle/kernel/config_mem.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/shared_page.h"
@@ -340,6 +341,7 @@ void ApplyMachine(const Machine& m)
   v.use_cpu_jit = m.cpu_jit;
   v.use_fastinterp = true;
   v.cpu_clock_percentage = m.cpu_clock;
+  Service::FS::chimera_commit_ns = static_cast<s64>(m.commit_ms) * 1000000;
   v.init_clock = Settings::InitClock::FixedTime;
   v.init_time = m.rtc_start;
   v.init_time_offset = 0;

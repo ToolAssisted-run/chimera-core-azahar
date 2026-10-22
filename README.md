@@ -37,6 +37,9 @@ All of them are part of the machine: a movie needs the same values.
   then runs with the machine, never with the host.
 - **CPU**: dynarmic's recompiler (default) or the interpreter.
 - **CPU Clock (%)**.
+- **Save Data Commit Time (ms)**: how long committing save data keeps the
+  game waiting, in the console's time. Default 100 (an estimate); 0 answers
+  at once, as builds before this setting did, and an older movie needs 0.
 - **Renderer**: `software` (default: inside the sandbox, the same on every
   machine) or `opengl-hw`, Azahar's OpenGL renderer on the real GPU through
   the bridge - many times faster, but the GPU's pictures reach the console's

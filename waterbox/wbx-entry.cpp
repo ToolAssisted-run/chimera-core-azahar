@@ -5,6 +5,7 @@
 // the sandbox.
 // SPDX-License-Identifier: MIT
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -190,6 +191,7 @@ ECL_EXPORT int Init(void)
   if (wbx_setting_str("cpu", val, sizeof val) > 0)
     m.cpu_jit = strcmp(val, "interpreter") != 0;
   m.cpu_clock = static_cast<int>(wbx_setting_long("cpu_clock", 100));
+  m.commit_ms = static_cast<int>(std::clamp(wbx_setting_long("savedata_commit_ms", 100L), 0L, 10000L));
   m.motion = wbx_setting_bool("motion", 0) != 0;
   if (wbx_setting_str("renderer", val, sizeof val) > 0)
     m.opengl = strcmp(val, "opengl-hw") == 0;

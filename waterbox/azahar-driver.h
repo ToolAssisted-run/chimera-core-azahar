@@ -19,6 +19,9 @@ struct Machine
   uint64_t rtc_start = 946684800;  // the RTC at power-on, seconds since 1970 (2000-01-01)
   bool cpu_jit = true;
   int cpu_clock = 100;       // percent
+  // How long committing save data keeps the game waiting, in milliseconds of
+  // the console's time (patch 0016, chimera#345). 0: at once, as before.
+  int commit_ms = 100;
   bool motion = false;       // the accelerometer and gyroscope take input
   bool opengl = false;       // the OpenGL renderer through the GPU bridge (else software)
   // The console's user name, as its settings menu would hold it: games read

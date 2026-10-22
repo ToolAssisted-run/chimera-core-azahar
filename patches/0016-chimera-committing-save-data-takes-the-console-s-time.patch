@@ -1,0 +1,71 @@
+diff --git a/src/core/hle/service/fs/fs_user.cpp b/src/core/hle/service/fs/fs_user.cpp
+index 5f6beb9..dd60a2b 100644
+--- a/src/core/hle/service/fs/fs_user.cpp
++++ b/src/core/hle/service/fs/fs_user.cpp
+@@ -41,6 +41,10 @@ using Kernel::ServerSession;
+ 
+ namespace Service::FS {
+ 
++#ifdef CHIMERA_CORE
++s64 chimera_commit_ns = 0;
++#endif
++
+ void FS_USER::Initialize(Kernel::HLERequestContext& ctx) {
+     IPC::RequestParser rp(ctx);
+     u32 pid = rp.PopPID();
+@@ -764,6 +768,24 @@ void FS_USER::ControlArchive(Kernel::HLERequestContext& ctx) {
+         if (res.IsSuccess() && output_size != 0) {
+             output.Write(out_data.data(), 0, out_data.size());
+         }
++#ifdef CHIMERA_CORE
++        // chimera: a commit writes the save data out to the card, and on a
++        // console that takes a while. Answered at once, a game that shows a
++        // window while it saves can ask that window to close before it has
++        // finished opening, and wait forever for it to close (Aikatsu! My
++        // No.1 Stage! on its first start, chimera#345). The game thread waits
++        // the console time the project sets; the other threads run on.
++        if (action == 0 && chimera_commit_ns > 0) {
++            const s64 wait_ns = chimera_commit_ns;
++            ctx.RunAsync([wait_ns](Kernel::HLERequestContext&) { return wait_ns; },
++                         [res](Kernel::HLERequestContext& ctx) {
++                             IPC::RequestBuilder rb(ctx, 1, 0);
++                             rb.Push(res);
++                         },
++                         false);
++            return;
++        }
++#endif
+         IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
+         rb.Push(res);
+         return;
+@@ -799,7 +821,12 @@ void FS_USER::ControlArchive(Kernel::HLERequestContext& ctx) {
+             async_data->res = archives.ControlArchive(
+                 async_data->handle, async_data->action, in_data.data(), in_data.size(),
+                 async_data->out_data.data(), async_data->out_data.size());
++#ifdef CHIMERA_CORE
++            // chimera: the commit's console time, as on the path above
++            return async_data->action == 0 ? chimera_commit_ns : s64{0};
++#else
+             return 0;
++#endif
+         },
+         [async_data](Kernel::HLERequestContext& ctx) {
+             IPC::RequestBuilder rb(ctx, 1, 0);
+diff --git a/src/core/hle/service/fs/fs_user.h b/src/core/hle/service/fs/fs_user.h
+index d6a3337..2382fb8 100644
+--- a/src/core/hle/service/fs/fs_user.h
++++ b/src/core/hle/service/fs/fs_user.h
+@@ -19,6 +19,13 @@ class System;
+ 
+ namespace Service::FS {
+ 
++#ifdef CHIMERA_CORE
++// chimera: how long, in nanoseconds of the console's time, committing save
++// data (ControlArchive action 0) keeps the game thread waiting. The core sets
++// it from the project; 0 answers at once, as upstream does.
++extern s64 chimera_commit_ns;
++#endif
++
+ class ArchiveManager;
+ 
+ struct ProgramInfo {

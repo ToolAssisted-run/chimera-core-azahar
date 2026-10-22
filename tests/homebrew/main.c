@@ -12,6 +12,9 @@
  *   - the frame: it waits for each vertical blank, so it runs at the
  *     console's own pace.
  *
+ * Once, before the first frame, it also commits save data and times how long
+ * the console kept it waiting (chimera issue 345).
+ *
  * It uses libctru (zlib licence) and nothing else, and is built with
  * devkitARM by the Makefile beside it.
  */
@@ -21,6 +24,27 @@
  * of the machine sees it */
 volatile u32 g_held_history[64];
 volatile u32 g_frames;
+
+/* one save-data commit, timed (chimera issue 345): the test script finds this
+ * in the console's memory by its tag and reads what the commit answered and
+ * how many console ticks it kept the program waiting */
+volatile struct
+{
+	char tag[12];
+	u32 result;
+	u32 ticks;
+} g_commit = {"COMMITPROBE", 0xffffffff, 0};
+
+static void time_a_commit(void)
+{
+	FS_Archive sdmc;
+	if (R_FAILED(FSUSER_OpenArchive(&sdmc, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""))))
+		return;
+	const u64 before = svcGetSystemTick();
+	g_commit.result = FSUSER_ControlArchive(sdmc, ARCHIVE_ACTION_COMMIT_SAVE_DATA, NULL, 0, NULL, 0);
+	g_commit.ticks = (u32)(svcGetSystemTick() - before);
+	FSUSER_CloseArchive(sdmc);
+}
 
 static void fill_top(u8 *fb, u16 w, u16 h, u32 frame)
 {
@@ -57,6 +81,7 @@ int main(void)
 	gfxInitDefault();
 	gfxSetDoubleBuffering(GFX_TOP, true);
 	gfxSetDoubleBuffering(GFX_BOTTOM, true);
+	time_a_commit();
 	while (aptMainLoop())
 	{
 		hidScanInput();

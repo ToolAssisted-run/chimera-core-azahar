@@ -80,8 +80,9 @@ with `fopencookie`, so FileUtil's own code is unchanged.
 `waterbox/run-gate.sh` (`-q` skips the rebuild). The machine legs run on
 decrypted dumps in `tests/roms-local`: `darkwitch.cci` (Legend of Dark
 Witch), `drancia.cci` (Drancia Saga), `mlss.3ds` (Mario & Luigi Superstar
-Saga + Bowser's Minions, the 800-wide top screen) and `cars2.3ds` (Cars 2,
-the dump still marked encrypted). Every comparison has a control that can
+Saga + Bowser's Minions, the 800-wide top screen), `cars2.3ds` (Cars 2,
+the dump still marked encrypted) and `aikatsu.3ds` (Aikatsu! My No.1 Stage!,
+the first start's save window, chimera#345). Every comparison has a control that can
 fail: an idle run for the input legs, the top screen for touch, the default
 spelled out for the clock, a scrambled ExeFS for the encryption check, and
 MALLOC_PERTURB_ for the host heap (that leg found patch 0013). About 22
@@ -301,6 +302,39 @@ taken in a 3D scene. A saved state was 202 MB at 2x and 238 MB at 4x.
 
 Not tested: 3x on a real card (only on llvmpipe), other drivers, and
 TAStudio itself (the runs above are the headless runner).
+
+## A save-data commit takes the console's time (user-decided, 2026-10-22, chimera#345)
+
+Aikatsu! My No.1 Stage! (Japan) stopped on its first start at the window
+"Initializing, don't touch the power button". The game opens that window,
+creates and writes its save data on a helper thread, and when the save is
+done asks the window to close. It accepts the request only once the window
+has finished opening; before that it drops it, and then waits for the window
+to close, forever. Azahar answers every save-data request at once, so the
+whole save took 22 frames and the close request came in the frame the window
+finished opening, a moment too early. On a console, writing to the SD card
+takes far longer.
+
+What was measured: started with the save its first start had made, the game
+goes on normally (it reads the save and asks about extra data on the SD
+card). With 50 ms or 200 ms of console time on the commit, the first start
+gets through to "Initialized".
+
+The owner's choice is a setting, Save Data Commit Time (`savedata_commit_ms`):
+100 ms by default, 0 for the old instant answer. Patch 0016: FS
+ControlArchive with action 0 (commit) puts the calling thread to sleep for
+that console time and answers after it, through the same delayed reply the
+file reads use (deterministic here); the other threads run on. The 100 ms is
+an estimate, not a time measured on a console. A movie made with an earlier
+build reaches a commit at another time from then on and can desync; its
+project needs the setting at 0.
+
+Tests: the test program (`tests/homebrew`) commits once before its first
+frame and keeps the result and the console ticks it waited behind the tag
+COMMITPROBE; the gate reads them from FCRAM at the default, at 0 and at 250.
+With `aikatsu.3ds` in `tests/roms-local` the gate also runs the first start
+at the default and at 0: at the default A answers "Initialized" and the game
+moves on; at 0 it stays on the "Initializing" window.
 
 ## Lag
 
