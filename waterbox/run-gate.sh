@@ -41,6 +41,28 @@ while getopts "r:m:q" opt; do
 done
 
 work="$root/build/gate"
+# A game runs only in a project (Chimera, 2026-10-26): crun_game <package>
+# <game> <movie> [chimera-run's options] makes one of the game and the movie,
+# with any --settings and --firmware given, and runs it with the rest.
+crun_quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+crun_game() {
+	cg_pkg="$1" cg_game="$2" cg_movie="$3" cg_made=""
+	shift 3
+	cg_n=$#
+	while [ "$cg_n" -gt 0 ]; do
+		case "$1" in
+			--settings) cg_made="$cg_made --settings $(crun_quote "$2")"; shift 2; cg_n=$((cg_n - 2)); continue ;;
+			--settings=*) cg_made="$cg_made --settings $(crun_quote "${1#--settings=}")"; shift; cg_n=$((cg_n - 1)); continue ;;
+			--firmware) cg_made="$cg_made --firmware $(crun_quote "$2")"; set -- "$@" "$1" "$2"; shift 2; cg_n=$((cg_n - 2)); continue ;;
+			--firmware=*) cg_made="$cg_made --firmware $(crun_quote "${1#--firmware=}")"; set -- "$@" "$1"; shift; cg_n=$((cg_n - 1)); continue ;;
+		esac
+		set -- "$@" "$1"; shift; cg_n=$((cg_n - 1))
+	done
+	cg_dir="$(mktemp -d "$work/project.XXXXXX")"
+	eval "\"\$run\" --new-project \"\$cg_dir/game.chimeraProject\" \"\$cg_pkg\" \"\$cg_game\" \"\$cg_movie\" $cg_made" \
+		> "$cg_dir/make.log" 2>&1 || { echo "chimera-run: no project made: $(tail -1 "$cg_dir/make.log")" >&2; return 2; }
+	"$run" --project "$cg_dir/game.chimeraProject" "$cg_pkg" --files "$(dirname "$cg_game")" "$@"
+}
 rm -rf "$work"; mkdir -p "$work"
 native="$here/obj-native/run-native"
 wbxrun="$here/bin/run-wbx"
@@ -478,7 +500,7 @@ for f in range(760):
     lines.append('|' + ''.join('%5d,' % v for v in (0, 0, 0, 0, 32768, 32768)) + ''.join(b) + '|')
 open(sys.argv[1], 'w').write('\n'.join(lines) + '\n')
 PY
-	if "$run" "$pkg" "$roms/drancia.cci" "$work/engine.movie" --screenshot 759="$work/engine.tga" \
+	if crun_game "$pkg" "$roms/drancia.cci" "$work/engine.movie" --screenshot 759="$work/engine.tga" \
 		> "$work/engine.out" 2>&1 && grep -q '^frames=760' "$work/engine.out" && [ -s "$work/engine.tga" ]; then
 		report PASS "drancia: 760 frames in the engine" "a Down press at 700, through a movie"
 	else
@@ -548,7 +570,7 @@ for game in darkwitch.cci drancia.cci; do
 	fi
 done
 if [ -f "$roms/drancia.cci" ] && [ -x "$run" ] && [ -f "$pkg" ]; then
-	if "$run" "$pkg" "$roms/drancia.cci" "$work/engine.movie" --gpu --settings '{"renderer":"opengl-hw"}' \
+	if crun_game "$pkg" "$roms/drancia.cci" "$work/engine.movie" --gpu --settings '{"renderer":"opengl-hw"}' \
 		--screenshot 759="$work/engine-gl.tga" > "$work/engine-gl.out" 2>&1 \
 		&& grep -q '^frames=760' "$work/engine-gl.out" && [ -s "$work/engine-gl.tga" ]; then
 		report PASS "drancia: 760 frames in the engine on the GPU" "$(grep -o 'Core Profile.*' "$work/engine-gl.out" | head -1 | cut -c1-40)"
