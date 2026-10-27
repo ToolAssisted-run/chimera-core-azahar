@@ -66,8 +66,8 @@ game's save archive and extra data); the project's Save data slot takes that
 Chimera includes no cores and downloads none. Download the `.chimeraCore`
 file from this repository's
 [Releases](https://github.com/ToolAssisted-run/chimera-core-azahar/releases)
-page, or build it, and put it in the `Cores` folder beside `Chimera.exe`.
-File > Core Manager lists what is in that folder. The same file works on
+page, or build it, and put it in the `cores` folder beside Chimera's program.
+Tools > Core Manager... lists what is in that folder. The same file works on
 Linux and on Windows.
 
 ## Building

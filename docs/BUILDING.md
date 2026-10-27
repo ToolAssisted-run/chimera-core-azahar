@@ -22,7 +22,7 @@ The packages the workflow installs:
 
 ```
 sudo apt-get update
-sudo apt-get install -y --no-install-recommends meson ninja-build build-essential cmake pkg-config python3 mono-complete xvfb libgl1-mesa-dev libegl-dev libx11-dev libxext-dev libasound2-dev
+sudo apt-get install -y --no-install-recommends meson ninja-build build-essential cmake pkg-config python3 libgl1-mesa-dev libegl-dev libx11-dev libxext-dev libasound2-dev
 ```
 
 Toolchains:
@@ -30,14 +30,9 @@ Toolchains:
 - **C and C++**: the `gcc` and `g++` that `build-essential` installs. The
   workflow pins no compiler version. Use one `gcc` for miniBox and for the
   core (see Troubleshooting).
-- **.NET SDK 8.0**: the workflow uses `actions/setup-dotnet@v4` with
-  `dotnet-version: '8.0'`. By hand, Chimera's README gives
-  `curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0`
-  and says a distribution's own SDK lacks targets the frontend needs. Make
-  sure `dotnet` is on `PATH` afterwards. It is needed only to build Chimera's
-  solution and run its contract tests, not to build the package.
-- **Mono** (`mono-complete`): for Chimera's managed side, which targets .NET
-  Framework 4.8 and runs on Mono on Linux.
+- **Qt 6.12**: Chimera's window needs it, for the contract tests only.
+  Chimera's `tools/ci-chimera.sh` installs it (from Qt's own archives, with
+  aqt) and builds Chimera; the workflow keeps Qt in `~/qt` between runs.
 - **git**, for the clone and the submodules.
 
 What the build fetches or generates by itself:
@@ -235,11 +230,10 @@ is a file somebody puts in its cores folder.
   cp build/package/azahar.chimeraCore <chimera>/build/Cores/
   ```
 
-- **A Chimera release bundle.** Put the file in the `Cores` folder beside
-  `Chimera.exe`, or in another folder chosen with File > Core Manager >
+- **A Chimera release bundle.** Put the file in the `cores` folder beside Chimera's program, or in another folder chosen with Tools > Core Manager... >
   Change folder...
 
-File > Core Manager lists what is in the folder. Refresh List rescans it, so
+Tools > Core Manager... lists what is in the folder. Refresh List rescans it, so
 a package copied in while Chimera runs is found without a restart.
 
 The same package file works on Linux and on Windows: the guest inside it is
@@ -324,24 +318,18 @@ the games, before pushing: CI cannot.
 
 ### Chimera's contract tests
 
-They open the package through Chimera's engine, so Chimera's native libraries
-and its solution must be built first. The workflow's commands, from
-`<chimera>`:
+They open the package through Chimera's engine, so Chimera must be built
+first, with its window. The workflow's command, from `<chimera>`:
 
 ```
-meson setup build/meson-linux --prefix "$PWD/build" --libdir dll
-meson compile -C build/meson-linux
-meson install -C build/meson-linux
-dotnet build source/gui/Chimera.sln -c Release /nodeReuse:false -p:UseSharedCompilation=false
+tools/ci-chimera.sh
 ```
 
 That build also produces `build/meson-linux/chimera-run`, which the gate's
 engine legs use. Then, with the package in `<chimera>/build/Cores`:
 
 ```
-CHIMERA_CORES_DIR=<chimera>/build/Cores dotnet test source/gui/Chimera.Tests.Client.Common/Chimera.Tests.Client.Common.csproj \
-  -c Release --nologo \
-  --filter "FullyQualifiedName~InstalledCorePackagesTests|FullyQualifiedName~MnemonicUniquenessTests"
+CHIMERA_CORES_DIR=<chimera>/build/Cores <chimera>/build/meson-linux/source/ui/test-packages
 ```
 
 They prove the package is readable, is built for a guest ABI this frontend

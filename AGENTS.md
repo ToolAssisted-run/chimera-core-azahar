@@ -35,7 +35,7 @@ Ubuntu, as CI. `<chimera>` is a Chimera checkout; `<core>` is this one.
 
 ```
 sudo apt-get update
-sudo apt-get install -y --no-install-recommends meson ninja-build build-essential cmake pkg-config python3 mono-complete xvfb libgl1-mesa-dev libegl-dev libx11-dev libxext-dev libasound2-dev
+sudo apt-get install -y --no-install-recommends meson ninja-build build-essential cmake pkg-config python3 libgl1-mesa-dev libegl-dev libx11-dev libxext-dev libasound2-dev
 
 git clone --recursive https://github.com/ToolAssisted-run/chimera.git <chimera>
 export CHIMERA_ROOT=<chimera>
@@ -60,8 +60,8 @@ meson compile -C "$mb/build/meson-cpp"
 ```
 
 The miniBox guest toolchain build downloads the GCC source that matches the
-host compiler. Chimera's contract tests also need the .NET SDK 8.0 and
-Chimera's own build: see `docs/BUILDING.md`.
+host compiler. Chimera's contract tests also need Chimera's own build
+(with its window, which needs Qt 6.12): see `docs/BUILDING.md`.
 
 ## Build
 
@@ -88,9 +88,9 @@ make -C waterbox -f native.mk MB="$MINIBOX_DIR"
 
 Chimera ships no cores and downloads nothing. A core is a file in its cores
 folder: `<chimera>/build/Cores/` in a source checkout (where
-`build-package.sh -r <chimera>` writes), or the `Cores` folder beside
-`Chimera.exe` in a release bundle, or the folder chosen in File > Core
-Manager > Change folder... File > Core Manager lists the folder; Refresh
+`build-package.sh -r <chimera>` writes), or the `cores` folder beside
+Chimera's program in a release bundle, or the folder chosen in Tools >
+Core Manager... > Change folder... Tools > Core Manager... lists the folder; Refresh
 List rescans it. The same package works on Linux and on Windows. A package
 built by hand stamps `<commit>+local` (`-dirty` with changes in the tree,
 which the applied patches count as) and is for testing. Only CI's packages
