@@ -28,6 +28,11 @@
 
 namespace
 {
+/* A text a person reads is a key of languages/en.json, each of its
+ * arguments after a TEXT_ARG (chimera docs/translations.md). TEXT_ARG is a
+ * string of its own so the byte after it is never read as more of its hex. */
+#define TEXT_ARG "\x1f"
+
 char g_loadError[1024];
 
 bool Exists(const char* name)
@@ -125,7 +130,7 @@ ECL_EXPORT int Init(void)
   const char* host = Exists(base) ? base : "game";
   if (!base[0] || !Exists(host))
   {
-    snprintf(g_loadError, sizeof g_loadError, "no game: the project names none, or '%s' is not there", base);
+    snprintf(g_loadError, sizeof g_loadError, "error.no_file" TEXT_ARG "%s", base);
     return 0;
   }
   // The project's files, each opened once, in this order, every run (see
@@ -133,7 +138,7 @@ ECL_EXPORT int Init(void)
   const std::string romPath = std::string("/game/") + base;
   if (!ChimeraFSHost::MountFile(romPath, host))
   {
-    snprintf(g_loadError, sizeof g_loadError, "cannot open the game '%s'", base);
+    snprintf(g_loadError, sizeof g_loadError, "error.not_opened" TEXT_ARG "%s", base);
     return 0;
   }
   // Keys and seeds, if the project carries them: a decrypted cartridge needs
@@ -142,7 +147,7 @@ ECL_EXPORT int Init(void)
   for (const char* sys : {"aes_keys.txt", "seeddb.bin"})
     if (Exists(sys) && !ChimeraFSHost::MountFile(std::string("/user/sysdata/") + sys, sys))
     {
-      snprintf(g_loadError, sizeof g_loadError, "cannot open %s", sys);
+      snprintf(g_loadError, sizeof g_loadError, "error.sys_not_opened" TEXT_ARG "%s", sys);
       return 0;
     }
 
@@ -159,12 +164,12 @@ ECL_EXPORT int Init(void)
     std::string error;
     if (!ZipReadAll(sdBase, files, error))
     {
-      snprintf(g_loadError, sizeof g_loadError, "the save data '%s' is not a save data zip: %s", sdBase, error.c_str());
+      snprintf(g_loadError, sizeof g_loadError, "error.save_not_zip" TEXT_ARG "%s" TEXT_ARG "%s", sdBase, error.c_str());
       return 0;
     }
     if (files.empty())
     {
-      snprintf(g_loadError, sizeof g_loadError, "the save data '%s' holds no files", sdBase);
+      snprintf(g_loadError, sizeof g_loadError, "error.save_empty" TEXT_ARG "%s", sdBase);
       return 0;
     }
     for (const auto& f : files)
@@ -172,8 +177,7 @@ ECL_EXPORT int Init(void)
       if (f.name.compare(0, 5, "sdmc/") != 0 || f.name.find("..") != std::string::npos)
       {
         snprintf(g_loadError, sizeof g_loadError,
-                 "the save data holds '%s', which is not the SD card's: every entry is sdmc/..., as "
-                 "Export Save Data writes them", f.name.c_str());
+                 "error.save_not_sd" TEXT_ARG "%s", f.name.c_str());
         return 0;
       }
       ChimeraFSHost::WriteFile("/user/" + f.name, f.bytes.data(), f.bytes.size());
@@ -204,7 +208,7 @@ ECL_EXPORT int Init(void)
   {
     const int scale = OneOf(val, {"1x", "2x", "3x", "4x"});
     if (scale < 0)
-      return Refuse("no such internal resolution: %s", val);
+      return Refuse("error.no_resolution" TEXT_ARG "%s", val);
     m.scale = scale + 1;
   }
   // Above the console's resolution the OpenGL renderer's surfaces are copied
@@ -232,7 +236,7 @@ ECL_EXPORT int Init(void)
   {
     m.layout = OneOf(val, {"stacked", "single", "large", "side-by-side"});
     if (m.layout < 0)
-      return Refuse("no such screen layout: %s", val);
+      return Refuse("error.no_layout" TEXT_ARG "%s", val);
   }
   m.swap_screens = wbx_setting_bool("swap_screens", 0) != 0;
   m.upright = wbx_setting_bool("upright", 0) != 0;

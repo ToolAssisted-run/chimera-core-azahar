@@ -3,7 +3,7 @@
   "slots": [
     {
       "id": "game",
-      "title": "Game",
+      "title": "slot.game",
       "min": 1,
       "max": 1,
       "formats": [
@@ -14,17 +14,17 @@
         "3dsx",
         "elf"
       ],
-      "help": "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an executable (.cxi or .app) or homebrew (.3dsx or .elf). Azahar does not decrypt. An encrypted dump is refused with a message that says so. An old dump that was decrypted but whose header still says 'encrypted' is recognised and runs."
+      "help": "slot.game.help"
     },
     {
       "id": "savedata",
-      "title": "Save data",
+      "title": "slot.savedata",
       "min": 0,
       "max": 1,
       "formats": [
         "zip"
       ],
-      "help": "What the game already saved, as Emulator > Export Save Data... wrote it. It is a .zip of the SD card's 'Nintendo 3DS' folder (the game's save data and extra data). It is put back onto the machine's SD card before the game starts."
+      "help": "slot.savedata.help"
     }
   ]
 }

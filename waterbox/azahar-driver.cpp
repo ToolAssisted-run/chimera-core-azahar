@@ -48,6 +48,11 @@ namespace ChimeraAzahar
 {
 namespace
 {
+/* A text a person reads is a key of languages/en.json, each of its
+ * arguments after a TEXT_ARG (chimera docs/translations.md). TEXT_ARG is a
+ * string of its own so the byte after it is never read as more of its hex. */
+#define TEXT_ARG "\x1f"
+
 std::string g_error;
 Machine g_machine;
 bool g_booted = false;
@@ -465,7 +470,7 @@ bool Init(const Machine& m, const std::string& rom)
       g_video = VideoMemory ? VideoMemory(2 * most) : new uint32_t[2 * most];
       if (!g_video)
       {
-        g_error = "no memory for the picture";
+        g_error = "error.no_picture_memory";
         return false;
       }
       g_rows = g_video + most;
@@ -489,25 +494,24 @@ bool Init(const Machine& m, const std::string& rom)
     auto loader = Loader::GetLoader(rom);
     if (!loader)
     {
-      g_error = "no loader for the game file (" + rom + ")";
+      g_error = "error.no_loader" TEXT_ARG + rom;
       return false;
     }
     const auto [mode, status] = loader->LoadKernelMemoryMode();
     (void)mode;
     if (status == Loader::ResultStatus::ErrorEncrypted)
     {
-      g_error = "the game is encrypted: Azahar runs decrypted dumps only (.3ds/.cci/.cxi "
-                "decrypted, or .3dsx homebrew)";
+      g_error = "error.encrypted";
       return false;
     }
     if (status == Loader::ResultStatus::ErrorInvalidFormat)
     {
-      g_error = "the game file is not a format Azahar reads (.3ds .cci .cxi .app .3dsx .elf)";
+      g_error = "error.not_format";
       return false;
     }
     if (status == Loader::ResultStatus::ErrorGbaTitle)
     {
-      g_error = "a GBA Virtual Console title: Azahar does not run those";
+      g_error = "error.gba_title";
       return false;
     }
     system.RegisterAppLoaderEarly(loader);
@@ -518,24 +522,23 @@ bool Init(const Machine& m, const std::string& rom)
   case Core::System::ResultStatus::Success:
     break;
   case Core::System::ResultStatus::ErrorLoader_ErrorEncrypted:
-    g_error = "the game is encrypted: Azahar runs decrypted dumps only (.3ds/.cci/.cxi "
-              "decrypted, or .3dsx homebrew)";
+    g_error = "error.encrypted";
     return false;
   case Core::System::ResultStatus::ErrorLoader_ErrorInvalidFormat:
-    g_error = "the game file is not a format Azahar reads (.3ds .cci .cxi .app .3dsx .elf)";
+    g_error = "error.not_format";
     return false;
   case Core::System::ResultStatus::ErrorLoader_ErrorGbaTitle:
-    g_error = "a GBA Virtual Console title: Azahar does not run those";
+    g_error = "error.gba_title";
     return false;
   case Core::System::ResultStatus::ErrorGetLoader:
-    g_error = "no loader for the game file (" + rom + ")";
+    g_error = "error.no_loader" TEXT_ARG + rom;
     return false;
   case Core::System::ResultStatus::ErrorSystemFiles:
-    g_error = "a 3DS system archive is missing: " + system.GetStatusDetails();
+    g_error = "error.no_system_archive" TEXT_ARG + system.GetStatusDetails();
     return false;
   default:
-    g_error = "Azahar could not boot the game (status " + std::to_string(static_cast<int>(result)) +
-              "): " + system.GetStatusDetails();
+    g_error = "error.not_booted" TEXT_ARG + std::to_string(static_cast<int>(result)) + TEXT_ARG +
+              system.GetStatusDetails();
     return false;
   }
   // The console's user name, into its settings before anything has run:
@@ -545,7 +548,7 @@ bool Init(const Machine& m, const std::string& rom)
     const std::u16string name = Common::UTF8ToUTF16(m.username);
     if (name.empty() || name.size() > 10)
     {
-      g_error = "the user name is not one the console can hold: one to ten characters";
+      g_error = "error.bad_user_name";
       return false;
     }
     if (auto cfg = Service::CFG::GetModule(system))
@@ -634,7 +637,7 @@ void Frame()
     const auto r = system.RunLoop();
     if (r != Core::System::ResultStatus::Success)
     {
-      g_error = "the machine stopped: " + system.GetStatusDetails();
+      g_error = "error.stopped" TEXT_ARG + system.GetStatusDetails();
       break;
     }
   }

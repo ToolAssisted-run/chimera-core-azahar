@@ -11,6 +11,12 @@
 #include <cryptopp/filters.h>
 #include <cryptopp/zinflate.h>
 
+/* Why a zip cannot be read is a key of languages/en.json, put inside the
+ * caller's sentence, each of its arguments after a TEXT_INNER (chimera
+ * docs/translations.md). TEXT_INNER is a string of its own so the byte after
+ * it is never read as more of its hex. */
+#define TEXT_INNER "\x1e"
+
 namespace
 {
 uint16_t rd16(const uint8_t* p) { return static_cast<uint16_t>(p[0] | (p[1] << 8)); }
@@ -38,13 +44,13 @@ bool ZipReadAll(const char* host_name, std::vector<ZipFile>& files, std::string&
   std::vector<uint8_t> z;
   if (!ReadAll(host_name, z))
   {
-    error = "cannot read it";
+    error = "error.zip_unreadable";
     return false;
   }
   // the end of central directory record: the last one in the final 64 KiB + 22
   if (z.size() < 22)
   {
-    error = "too short to be a zip";
+    error = "error.zip_short";
     return false;
   }
   size_t eocd = std::string::npos;
@@ -57,7 +63,7 @@ bool ZipReadAll(const char* host_name, std::vector<ZipFile>& files, std::string&
     }
   if (eocd == std::string::npos)
   {
-    error = "no zip directory in it";
+    error = "error.zip_no_directory";
     return false;
   }
   const uint16_t count = rd16(&z[eocd + 10]);
@@ -66,7 +72,7 @@ bool ZipReadAll(const char* host_name, std::vector<ZipFile>& files, std::string&
   {
     if (at + 46 > z.size() || rd32(&z[at]) != 0x02014b50)
     {
-      error = "a damaged zip directory";
+      error = "error.zip_damaged_directory";
       return false;
     }
     const uint16_t method = rd16(&z[at + 10]);
@@ -75,7 +81,7 @@ bool ZipReadAll(const char* host_name, std::vector<ZipFile>& files, std::string&
     const uint32_t local = rd32(&z[at + 42]);
     if (csize == 0xFFFFFFFFu || size == 0xFFFFFFFFu || local == 0xFFFFFFFFu)
     {
-      error = "a zip64 entry (a save is never that large)";
+      error = "error.zip64";
       return false;
     }
     std::string name(reinterpret_cast<const char*>(&z[at + 46]), nlen);
@@ -84,13 +90,13 @@ bool ZipReadAll(const char* host_name, std::vector<ZipFile>& files, std::string&
       continue;  // a folder: the files under it make it
     if (local + 30 > z.size() || rd32(&z[local]) != 0x04034b50)
     {
-      error = "a damaged entry '" + name + "'";
+      error = "error.zip_damaged_entry" TEXT_INNER + name;
       return false;
     }
     const size_t data = local + 30 + rd16(&z[local + 26]) + rd16(&z[local + 28]);
     if (data + csize > z.size())
     {
-      error = "a truncated entry '" + name + "'";
+      error = "error.zip_truncated_entry" TEXT_INNER + name;
       return false;
     }
     ZipFile f{name, {}};
@@ -107,19 +113,18 @@ bool ZipReadAll(const char* host_name, std::vector<ZipFile>& files, std::string&
       }
       catch (const std::exception& e)
       {
-        error = "entry '" + name + "' does not inflate: " + e.what();
+        error = "error.zip_inflate" TEXT_INNER + name + TEXT_INNER + e.what();
         return false;
       }
     }
     else
     {
-      error = "entry '" + name + "' is compressed a way this core does not read (method " +
-              std::to_string(method) + ")";
+      error = "error.zip_method" TEXT_INNER + name + TEXT_INNER + std::to_string(method);
       return false;
     }
     if (f.bytes.size() != size)
     {
-      error = "entry '" + name + "' unpacks to the wrong size";
+      error = "error.zip_size" TEXT_INNER + name;
       return false;
     }
     files.push_back(std::move(f));

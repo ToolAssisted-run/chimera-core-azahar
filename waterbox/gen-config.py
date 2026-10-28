@@ -10,6 +10,29 @@ import json
 import os
 import sys
 
+# ---- the texts a person reads ----------------------------------------------
+# Every one is a key of languages/en.json (chimera docs/translations.md):
+# text() records the key's English and returns the key, each of its
+# arguments after it behind a 0x1F; write_texts() puts them in the table,
+# beside the keys the core's code names.
+TEXTS = {}
+
+
+def text(key, english, *args):
+    if TEXTS.setdefault(key, english) != english:
+        sys.exit("%s has two texts: %r and %r" % (key, TEXTS[key], english))
+    return "\x1f".join([key] + [str(a) for a in args])
+
+
+def write_texts(path):
+    table = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"texts": {}}
+    table["texts"].update(TEXTS)
+    table["texts"] = dict(sorted(table["texts"].items()))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(table, f, indent="\t", ensure_ascii=False)
+        f.write("\n")
+
 out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
 
 BUTTONS = ["A", "B", "X", "Y", "Up", "Down", "Left", "Right", "L", "R", "Start", "Select",
@@ -88,73 +111,73 @@ config = {
     "settings": [
         {
             "name": "model",
-            "display": "Model",
+            "display": text("setting.model", "Model"),
             "type": "enum",
             "options": ["new3ds", "old3ds"],
             "default": "new3ds",
-            "description": "Which console this is: a New Nintendo 3DS (256 MB of "
+            "description": text("setting.model.about", "Which console this is: a New Nintendo 3DS (256 MB of "
                 "memory, a faster processor mode, the ZL and ZR buttons and "
                 "the C-Stick) or the original Nintendo 3DS. Azahar's default"
                 " is the New 3DS, which runs every game. A game made for the"
                 " original model may be timed differently on the new one. It"
-                " is part of the machine, so a movie needs the same model.",
+                " is part of the machine, so a movie needs the same model."),
         },
         {
             "name": "region",
-            "display": "Region",
+            "display": text("setting.region", "Region"),
             "type": "enum",
             "options": ["auto", "jpn", "usa", "eur", "aus", "chn", "kor", "twn"],
             "default": "auto",
-            "description": "The console's region. 'auto' uses the game's own region. A "
-                "game can read it, so it is part of the machine.",
+            "description": text("setting.region.about", "The console's region. 'auto' uses the game's own region. A "
+                "game can read it, so it is part of the machine."),
         },
         {
             "name": "rtc_start",
-            "display": "Clock at Power-On",
+            "display": text("setting.rtc_start", "Clock at Power-On"),
             "type": "int",
             "default": 946684800,
             "min": 946684800,
             "max": 2145916800,
-            "description": "What the console's clock shows when the machine starts, in "
+            "description": text("setting.rtc_start.about", "What the console's clock shows when the machine starts, in "
                 "seconds since 1970-01-01 (UTC). The default is 2000-01-01 "
                 "00:00:00, the earliest date a 3DS can be set to. After the "
                 "start the clock runs with the emulated console and never "
                 "with your computer. A game that takes its random numbers or"
                 " its calendar from the clock plays differently with another"
-                " value, so it is part of the machine.",
+                " value, so it is part of the machine."),
         },
         {
             "name": "cpu",
-            "display": "CPU",
+            "display": text("setting.cpu", "CPU"),
             "type": "enum",
             "options": ["jit", "interpreter"],
             "default": "jit",
-            "description": "How the console's ARM11 processor is emulated: with "
+            "description": text("setting.cpu.about", "How the console's ARM11 processor is emulated: with "
                 "dynarmic's recompiler, which is fast, or with Azahar's "
                 "interpreter. Both are meant to give the same result. The "
                 "interpreter is there to find out whether a problem comes "
-                "from the recompiler or from the game.",
+                "from the recompiler or from the game."),
         },
         {
             "name": "cpu_clock",
-            "display": "CPU Clock (%)",
+            "display": text("setting.cpu_clock", "CPU Clock (%)"),
             "type": "int",
             "default": 100,
             "min": 5,
             "max": 400,
-            "description": "The speed of the ARM11 processor as a percentage of the "
+            "description": text("setting.cpu_clock.about", "The speed of the ARM11 processor as a percentage of the "
                 "real console's (Azahar's CPU clock setting). Above 100, a "
                 "game that slows down in busy scenes slows down less. It "
-                "changes how the game runs, so a movie needs the same value.",
+                "changes how the game runs, so a movie needs the same value."),
         },
         {
             "name": "savedata_commit_ms",
-            "display": "Save Data Commit Time (ms)",
+            "display": text("setting.savedata_commit_ms", "Save Data Commit Time (ms)"),
             "type": "int",
             "default": 100,
             "min": 0,
             "max": 10000,
-            "description": "How long, in milliseconds of the console's time, a game "
+            "description": text("setting.savedata_commit_ms.about", "How long, in milliseconds of the console's time, a game "
                 "waits when it commits its save data (writes it out to the "
                 "card for good). A real console takes a while to do that, and"
                 " a game can count on it: Aikatsu! My No.1 Stage! stops on its"
@@ -163,15 +186,15 @@ config = {
                 "the setting existed: a movie made with such a build needs 0."
                 " The default of 100 is an estimate, not a time measured on a"
                 " console. It changes how the game runs, so a movie needs the"
-                " same value.",
+                " same value."),
         },
         {
             "name": "renderer",
-            "display": "Renderer",
+            "display": text("setting.renderer", "Renderer"),
             "type": "enum",
             "options": ["software", "opengl-hw"],
             "default": "software",
-            "description": "Which renderer draws the picture. 'software' is Azahar's "
+            "description": text("setting.renderer.about", "Which renderer draws the picture. 'software' is Azahar's "
                 "own software renderer and the default. It runs completely "
                 "inside the sandbox, so the picture, and anything the game "
                 "reads back from it, is the same on every computer. 'opengl-"
@@ -182,15 +205,15 @@ config = {
                 "picture goes into the console's memory, so a movie recorded"
                 " this way plays back only on the same graphics driver. On a"
                 " computer that offers no OpenGL the core draws in software "
-                "and says so.",
+                "and says so."),
         },
         {
             "name": "internal_resolution",
-            "display": "Internal Resolution",
+            "display": text("setting.internal_resolution", "Internal Resolution"),
             "type": "enum",
             "options": ["1x", "2x", "3x", "4x"],
             "default": "1x",
-            "description": "How many times the console's own resolution the OpenGL "
+            "description": text("setting.internal_resolution.about", "How many times the console's own resolution the OpenGL "
                 "renderer draws at (Azahar's Internal Resolution). At 2x the"
                 " stacked picture is 800x960. The software renderer always "
                 "draws at 1x. This is part of the machine and not only of "
@@ -200,26 +223,26 @@ config = {
                 "movie therefore needs the resolution it was made with. "
                 "Above 1x every savestate also holds the renderer's pictures"
                 " at full size, so states are larger and saving one takes "
-                "longer.",
+                "longer."),
         },
         {
             "name": "username",
-            "display": "User Name",
+            "display": text("setting.username", "User Name"),
             "type": "string",
             "default": "",
-            "description": "The user name in the console's own settings, one to ten "
+            "description": text("setting.username.about", "The user name in the console's own settings, one to ten "
                 "characters. Games read it, for example as the owner of a "
                 "save file or in a greeting. It is part of the machine, so a"
                 " movie made with one name needs that name. Left empty, it "
-                "is Azahar's default, AZAHAR.",
+                "is Azahar's default, AZAHAR."),
         },
         {
             "name": "layout",
-            "display": "Screen Layout",
+            "display": text("setting.layout", "Screen Layout"),
             "type": "enum",
             "options": ["stacked", "single", "large", "side-by-side"],
             "default": "stacked",
-            "description": "How the two screens are placed in one picture (Azahar's "
+            "description": text("setting.layout.about", "How the two screens are placed in one picture (Azahar's "
                 "Screen Layout). 'stacked' puts the top screen above the "
                 "bottom one (400x480). 'single' shows the top screen alone "
                 "(400x240). 'large' shows one screen at full size with the "
@@ -230,92 +253,92 @@ config = {
                 " to know. The Touch axes are a position in the picture, so "
                 "a touch lands where the layout puts the bottom screen. A "
                 "movie that uses touch needs the layout it was made with, "
-                "and with the top screen alone nothing can be touched.",
+                "and with the top screen alone nothing can be touched."),
         },
         {
             "name": "swap_screens",
-            "display": "Swap Screens",
+            "display": text("setting.swap_screens", "Swap Screens"),
             "type": "bool",
             "default": False,
-            "description": "Exchanges the two screens in the layout. With 'single', the"
+            "description": text("setting.swap_screens.about", "Exchanges the two screens in the layout. With 'single', the"
                 " bottom screen is shown alone (320x240). With 'large', the "
-                "bottom screen is the large one.",
+                "bottom screen is the large one."),
         },
         {
             "name": "upright",
-            "display": "Upright Screens",
+            "display": text("setting.upright", "Upright Screens"),
             "type": "bool",
             "default": False,
-            "description": "Shows the console turned on its side, for games that are "
+            "description": text("setting.upright.about", "Shows the console turned on its side, for games that are "
                 "held like a book. The picture is turned a quarter turn, and"
-                " its width and height change places.",
+                " its width and height change places."),
         },
         {
             "name": "large_screen_proportion",
-            "display": "Large Screen Proportion",
+            "display": text("setting.large_screen_proportion", "Large Screen Proportion"),
             "type": "int",
             "default": 4,
             "min": 1,
             "max": 16,
-            "description": "With the 'large' layout, how many times larger the large "
-                "screen is than the small one. Azahar's default is 4.",
+            "description": text("setting.large_screen_proportion.about", "With the 'large' layout, how many times larger the large "
+                "screen is than the small one. Azahar's default is 4."),
         },
         {
             "name": "linear_filter",
-            "display": "Linear Filtering",
+            "display": text("setting.linear_filter", "Linear Filtering"),
             "type": "bool",
             "default": True,
-            "description": "Whether the OpenGL renderer smooths a screen when it scales"
+            "description": text("setting.linear_filter.about", "Whether the OpenGL renderer smooths a screen when it scales"
                 " it into the picture (Azahar's Enable Linear Filtering). "
                 "The difference shows where a screen is not at a whole "
                 "multiple of its own size, such as the small screen of the "
-                "'large' layout. It changes the picture only.",
+                "'large' layout. It changes the picture only."),
         },
         {
             "name": "motion",
-            "display": "Motion Controls",
+            "display": text("setting.motion", "Motion Controls"),
             "type": "bool",
             "default": False,
-            "description": "Whether the motion sensors (accelerometer and gyroscope) "
+            "description": text("setting.motion.about", "Whether the motion sensors (accelerometer and gyroscope) "
                 "take input through the six Accel and Gyro axes. With this "
                 "off the console lies still and flat, and those axes are "
-                "removed from the input columns.",
+                "removed from the input columns."),
         },
         {
             "name": "aes_keys",
-            "display": "AES Keys",
+            "display": text("setting.aes_keys", "AES Keys"),
             "type": "bool",
             "default": False,
-            "description": "Whether the project includes the console's AES keys "
+            "description": text("setting.aes_keys.about", "Whether the project includes the console's AES keys "
                 "(aes_keys.txt, dumped from your own console). A decrypted "
                 "game needs none, and this package includes none. They are "
                 "needed to install and run .cia content, for amiibo and for "
-                "some online-account features.",
+                "some online-account features."),
         },
         {
             "name": "seeddb",
-            "display": "Seed Database",
+            "display": text("setting.seeddb", "Seed Database"),
             "type": "bool",
             "default": False,
-            "description": "Whether the project includes seeddb.bin, the per-game seeds"
+            "description": text("setting.seeddb.about", "Whether the project includes seeddb.bin, the per-game seeds"
                 " that some eShop games are encrypted with. It is only used "
-                "together with AES Keys.",
+                "together with AES Keys."),
         },
     ],
     "firmware": [
         {
             "id": "aes_keys.txt",
-            "display": "AES keys (aes_keys.txt)",
-            "description": "The console's AES keys in Azahar's text format, dumped from"
+            "display": text("firmware.aes_keys_txt", "AES keys (aes_keys.txt)"),
+            "description": text("firmware.aes_keys_txt.about", "The console's AES keys in Azahar's text format, dumped from"
                 " your own console. Azahar looks for them in its system data"
-                " folder, and the core puts them there.",
+                " folder, and the core puts them there."),
             "name": "aes_keys.txt",
             "requiredWhen": {"setting": "aes_keys", "is": True},
         },
         {
             "id": "seeddb.bin",
-            "display": "Seed database (seeddb.bin)",
-            "description": "The seeds that some eShop games are encrypted with.",
+            "display": text("firmware.seeddb_bin", "Seed database (seeddb.bin)"),
+            "description": text("firmware.seeddb_bin.about", "The seeds that some eShop games are encrypted with."),
             "name": "seeddb.bin",
             "requiredWhen": {"setting": "seeddb", "is": True},
         },
@@ -329,26 +352,26 @@ slots = {
     "slots": [
         {
             "id": "game",
-            "title": "Game",
+            "title": text("slot.game", "Game"),
             "min": 1,
             "max": 1,
             "formats": GAME_FORMATS,
-            "help": "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an "
+            "help": text("slot.game.help", "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an "
                 "executable (.cxi or .app) or homebrew (.3dsx or .elf). "
                 "Azahar does not decrypt. An encrypted dump is refused with "
                 "a message that says so. An old dump that was decrypted but "
-                "whose header still says 'encrypted' is recognised and runs.",
+                "whose header still says 'encrypted' is recognised and runs."),
         },
         {
             "id": "savedata",
-            "title": "Save data",
+            "title": text("slot.savedata", "Save data"),
             "min": 0,
             "max": 1,
             "formats": ["zip"],
-            "help": "What the game already saved, as Emulator > Export Save "
+            "help": text("slot.savedata.help", "What the game already saved, as Emulator > Export Save "
                 "Data... wrote it. It is a .zip of the SD card's 'Nintendo "
                 "3DS' folder (the game's save data and extra data). It is "
-                "put back onto the machine's SD card before the game starts.",
+                "put back onto the machine's SD card before the game starts."),
         },
     ],
 }
@@ -395,3 +418,4 @@ for name, obj in (("waterbox.config", config), ("file_slots.json", slots),
     with open(os.path.join(out, name), "w") as f:
         json.dump(obj, f, indent=2)
         f.write("\n")
+write_texts(os.path.join(out, "languages", "en.json"))

@@ -346,8 +346,8 @@ with zipfile.ZipFile('$work/save.zip', 'w', zipfile.ZIP_DEFLATED) as z:
 	printf 'not a zip' > "$ws/save.zip"
 	if "$native" "$ws" --frames 1 --report 1 > "$work/sv.bad" 2>&1; then
 		report FAIL "drancia: a file that is not a save zip is refused" "it booted"
-	elif grep -q "is not a save data zip" "$work/sv.bad"; then
-		report PASS "drancia: a file that is not a save zip is refused" "$(grep -o 'is not a save data zip.*' "$work/sv.bad" | head -1)"
+	elif grep -q "error.save_not_zip" "$work/sv.bad"; then
+		report PASS "drancia: a file that is not a save zip is refused" "$(grep -o 'error.save_not_zip.*' "$work/sv.bad" | head -1)"
 	else
 		report FAIL "drancia: a file that is not a save zip is refused" "$(tail -1 "$work/sv.bad")"
 	fi
@@ -477,7 +477,7 @@ PY
 	printf '{"game":["fake.3ds"]}' > "$wf/slots"
 	if "$native" "$wf" --frames 1 > "$work/fake.out" 2>&1; then
 		report FAIL "an encrypted dump is refused" "it booted"
-	elif grep -q "the game is encrypted" "$work/fake.out"; then
+	elif grep -q "error.encrypted" "$work/fake.out"; then
 		report PASS "an encrypted dump is refused" "and Cars 2's plaintext one is not (above)"
 	else
 		report FAIL "an encrypted dump is refused" "$(tail -1 "$work/fake.out")"
@@ -639,8 +639,8 @@ if [ -f "$roms/drancia.cci" ]; then
 	# a value this build does not know is refused, not defaulted
 	lay nolayout '{"layout":"diagonal"}' || true
 	lay longname '{"username":"elevenchars"}' || true
-	if grep -q "no such screen layout: diagonal" "$work/lay-nolayout.ne" && [ ! -s "$work/lay-nolayout.n" ] \
-		&& grep -q "one to ten characters" "$work/lay-longname.ne" && [ ! -s "$work/lay-longname.n" ]; then
+	if grep -q "error.no_layout"$'\x1f'"diagonal" "$work/lay-nolayout.ne" && [ ! -s "$work/lay-nolayout.n" ] \
+		&& grep -q "error.bad_user_name" "$work/lay-longname.ne" && [ ! -s "$work/lay-longname.n" ]; then
 		report PASS "drancia: a layout or a name it cannot give is refused" "and says which"
 	else
 		report FAIL "drancia: a layout or a name it cannot give is refused" "$(tail -1 "$work/lay-nolayout.ne" | cut -c1-60)"
@@ -761,7 +761,7 @@ if [ -f "$roms/darkwitch.cci" ]; then
 	# a resolution this build does not offer is refused, not defaulted
 	workdir "$work/gl9x" darkwitch.cci '{"renderer":"opengl-hw","internal_resolution":"9x"}'
 	gpurun "$native" "$work/gl9x" --frames 30 --report 30 > "$work/gl9x.n" 2>"$work/gl9x.ne" || true
-	if grep -q "no such internal resolution: 9x" "$work/gl9x.ne" && [ ! -s "$work/gl9x.n" ]; then
+	if grep -q "error.no_resolution"$'\x1f'"9x" "$work/gl9x.ne" && [ ! -s "$work/gl9x.n" ]; then
 		report PASS "darkwitch: a resolution it cannot give is refused" "and says which"
 	else
 		report FAIL "darkwitch: a resolution it cannot give is refused" "$(tail -1 "$work/gl9x.ne" | cut -c1-60)"
