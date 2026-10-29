@@ -25,6 +25,9 @@
 # Usage: ./run-gate.sh [-r <chimera root>] [-m <minibox dir>] [-q]
 #        -q: skip the rebuild (the binaries in build/ and waterbox/bin are used)
 set -eu
+# a refusal's arguments follow its key, each after a unit separator (0x1F);
+# sh has no $'\x1f', so printf makes it
+us="$(printf '\037')"
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
 chimera_root="${CHIMERA_ROOT:-$HOME/chimera}"
@@ -639,7 +642,7 @@ if [ -f "$roms/drancia.cci" ]; then
 	# a value this build does not know is refused, not defaulted
 	lay nolayout '{"layout":"diagonal"}' || true
 	lay longname '{"username":"elevenchars"}' || true
-	if grep -q "error.no_layout"$'\x1f'"diagonal" "$work/lay-nolayout.ne" && [ ! -s "$work/lay-nolayout.n" ] \
+	if grep -q "error.no_layout${us}diagonal" "$work/lay-nolayout.ne" && [ ! -s "$work/lay-nolayout.n" ] \
 		&& grep -q "error.bad_user_name" "$work/lay-longname.ne" && [ ! -s "$work/lay-longname.n" ]; then
 		report PASS "drancia: a layout or a name it cannot give is refused" "and says which"
 	else
@@ -761,7 +764,7 @@ if [ -f "$roms/darkwitch.cci" ]; then
 	# a resolution this build does not offer is refused, not defaulted
 	workdir "$work/gl9x" darkwitch.cci '{"renderer":"opengl-hw","internal_resolution":"9x"}'
 	gpurun "$native" "$work/gl9x" --frames 30 --report 30 > "$work/gl9x.n" 2>"$work/gl9x.ne" || true
-	if grep -q "error.no_resolution"$'\x1f'"9x" "$work/gl9x.ne" && [ ! -s "$work/gl9x.n" ]; then
+	if grep -q "error.no_resolution${us}9x" "$work/gl9x.ne" && [ ! -s "$work/gl9x.n" ]; then
 		report PASS "darkwitch: a resolution it cannot give is refused" "and says which"
 	else
 		report FAIL "darkwitch: a resolution it cannot give is refused" "$(tail -1 "$work/gl9x.ne" | cut -c1-60)"
