@@ -76,6 +76,7 @@ config = {
     "systemNames": {"3DS": "Nintendo 3DS"},
     "author": "The Citra and Azahar teams; chimera port by Sergio Martin",
     "url": "https://github.com/ToolAssisted-run/chimera-core-azahar",
+    "runsOn": ["windows-x86_64", "linux-x86_64", "macos-x86_64"],
     "romFile": "game",
     "deterministic": True,
     "memoryLayoutMiB": [256, 16, 40, 256, 3072],
