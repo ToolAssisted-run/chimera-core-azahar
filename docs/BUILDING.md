@@ -240,10 +240,9 @@ The same package file works on Linux and on Windows: the guest inside it is
 run by miniBox on either.
 
 Published packages are on this repository's Releases page. CI publishes a
-rolling `dev` release on every green push to main, and a dated
-`nightly-YYYY-MM-DD` release from the scheduled run (04:00 UTC, only when
-main moved since the last one). The asset is named
-`azahar-<version>.chimeraCore`.
+dated `nightly-YYYY-MM-DD` release from the scheduled run (04:00 UTC, only
+when main moved since the last one). The asset is named
+`azahar-<version>-x86_64.chimeraCore`.
 
 ## Run the gates
 
