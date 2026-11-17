@@ -367,7 +367,11 @@ screen.
   must go (PCSX2 patch 0015's shape), and a state load must rebuild the
   rasterizer cache including every cached descriptor (the #153 lesson).
 - Speed: the software renderer draws on one thread; Dark Witch's intro runs
-  at about 15 frames a second native and 8 in the sandbox.
+  at about 15 frames a second native and 8 in the sandbox. New Super Mario
+  Bros. 2 (chimera#599) runs at 6 to 8 frames a second in the sandbox from the
+  first frame on (1200 frames: 150 s of processor time in the sandbox, 132 s
+  native, on a busy machine), so it is the software renderer, not the
+  sandbox. The OpenGL renderer (`opengl-hw`) is the setting for speed.
 - `.cia` installs, seeded eShop titles and anything needing `aes_keys.txt`
   are declared but not tested (no keys here).
 - Motion input is wired and declared but no test game uses it.
