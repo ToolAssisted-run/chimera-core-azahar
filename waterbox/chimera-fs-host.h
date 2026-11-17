@@ -17,6 +17,9 @@ bool MountFile(const std::string& path, const char* host_name);
 bool WriteFile(const std::string& path, const void* bytes, size_t size);
 /// Every file below a folder, sorted, as full paths.
 std::vector<std::string> Files(const std::string& under);
+/// A number that is the same for the same bytes (and size): what a file holds,
+/// without copying it. 0 for a path that is not a file.
+uint64_t Fingerprint(const std::string& path);
 /// A whole file's bytes.
 bool ReadFile(const std::string& path, std::vector<uint8_t>& out);
 }  // namespace ChimeraFSHost

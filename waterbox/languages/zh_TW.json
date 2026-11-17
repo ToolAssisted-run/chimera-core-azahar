@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "使用者名稱不是主機能保存的：必須是一到十個字元。",
+		"error.cia_aborted": "安裝進行到一半就停止了",
+		"error.cia_encrypted": "其內容已加密，而 Azahar 只安裝已解密的 .cia 檔案",
+		"error.cia_install": "無法安裝 .cia 檔案「%1」：%2。",
+		"error.cia_invalid": "它不是 Azahar 能讀取的 .cia 檔案",
+		"error.cia_not_game": "「%1」不是遊戲：它是可下載內容、更新或系統標題。請把它放進「更多可安裝檔案」，遊戲放進「遊戲」。",
+		"error.cia_not_installed": "「%1」已安裝，但它的程式不在 SD 卡上。",
+		"error.cia_twice": ".cia 檔案「%1」在專案中出現了兩次，或同時也是遊戲。",
+		"error.cia_unreadable": "無法讀取",
 		"error.encrypted": "遊戲是加密的。Azahar 只執行已解密的傾印檔（已解密的 .3ds、.cci 或 .cxi，或 .3dsx 自製程式）。",
 		"error.gba_title": "這是 GBA Virtual Console 的遊戲，Azahar 不執行這類遊戲。",
 		"error.no_file": "沒有遊戲：專案未指定，或「%1」不存在。",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "沒有內部解析度 %1。",
 		"error.no_system_archive": "缺少 3DS 系統封存檔：%1",
 		"error.not_booted": "Azahar 無法開機執行遊戲（狀態 %1）：%2",
-		"error.not_format": "遊戲檔案不是 Azahar 所讀取的格式（.3ds .cci .cxi .app .3dsx .elf）。",
+		"error.not_format": "遊戲檔案不是 Azahar 所讀取的格式（.3ds .cci .cxi .app .3dsx .elf .cia）。",
 		"error.not_opened": "無法開啟遊戲「%1」。",
 		"error.save_empty": "存檔資料「%1」沒有任何檔案。",
 		"error.save_not_sd": "存檔資料中有「%1」，它不是 SD 卡的內容：每個項目都必須是 sdmc/...，即「匯出存檔資料」寫出的格式。",
@@ -66,7 +74,9 @@
 		"setting.username": "使用者名稱",
 		"setting.username.about": "主機自己設定中的使用者名稱，一到十個字元。遊戲會讀取它，例如作為存檔的擁有者，或用於問候語。它是機器的一部分，因此以某個名稱錄製的影片需要該名稱。留空時使用 Azahar 的預設值 AZAHAR。",
 		"slot.game": "遊戲",
-		"slot.game.help": "已解密的傾印檔。它可以是卡匣（.3ds 或 .cci）、執行檔（.cxi 或 .app），或自製程式（.3dsx 或 .elf）。Azahar 不會解密。加密的傾印檔會被拒絕，並附上說明此事的訊息。若舊的傾印檔已解密，但其標頭仍寫著「encrypted」，則會被辨識並執行。",
+		"slot.game.help": "已解密的傾印檔。它可以是卡匣（.3ds 或 .cci）、執行檔（.cxi 或 .app），或自製程式（.3dsx 或 .elf）。Azahar 不會解密。加密的傾印檔會被拒絕，並附上說明此事的訊息。若舊的傾印檔已解密，但其標頭仍寫著「encrypted」，則會被辨識並執行。 也接受已解密的 .cia：主機啟動時會把它安裝到其 SD 卡上。",
+		"slot.install": "更多可安裝檔案",
+		"slot.install.help": "主機啟動時在遊戲之後安裝到其 SD 卡上的已解密 .cia 檔案：可下載內容和更新，依此順序。它們每次啟動都會重新安裝，所以匯出存檔資料不包含它們。",
 		"slot.savedata": "存檔資料",
 		"slot.savedata.help": "遊戲已儲存的內容，即「模擬器 > 匯出存檔資料...」所寫出的格式。它是 SD 卡「Nintendo 3DS」資料夾（遊戲的存檔資料與額外資料）的 .zip。它會在遊戲啟動前放回主機的 SD 卡中。"
 	}

@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <atomic>
+#include <map>
+#include <cctype>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -30,6 +32,7 @@
 #include "core/frontend/image_interface.h"
 #include "core/frontend/input.h"
 #include "core/hle/service/cfg/cfg.h"
+#include "core/hle/service/am/am.h"
 #include "core/hle/service/fs/fs_user.h"
 #include "core/hle/kernel/config_mem.h"
 #include "core/hle/kernel/kernel.h"
@@ -337,6 +340,95 @@ private:
 
 std::unique_ptr<Window> g_window;
 
+// What .cia installs wrote on the SD card (path -> the file's fingerprint):
+// the installed games, updates and DLC come from the project's own files at
+// every boot, so Export Save Data leaves them out and a save zip taken back
+// in does not meet them already installed.
+std::map<std::string, uint64_t> g_installed;
+
+bool HasExtension(const std::string& path, const char* ext)
+{
+  const auto dot = path.rfind('.');
+  if (dot == std::string::npos || path.size() - dot != std::strlen(ext))
+    return false;
+  for (size_t i = 0; ext[i]; i++)
+    if (std::tolower(static_cast<unsigned char>(path[dot + i])) != ext[i])
+      return false;
+  return true;
+}
+
+// Installs the .cia files into the console's SD card, in order. On a failure
+// sets g_error. `boot` is given the installed game's own file when the game
+// was one of them.
+bool InstallCias(const std::vector<std::string>& cias, const std::string& game, std::string& boot)
+{
+  std::map<std::string, uint64_t> before;
+  for (const auto& path : ChimeraFSHost::Files("/user/sdmc"))
+    before[path] = ChimeraFSHost::Fingerprint(path);
+  for (const auto& cia : cias)
+  {
+    const auto name = cia.substr(cia.rfind('/') + 1);
+    const char* reason = nullptr;
+    switch (Service::AM::InstallCIA(cia))
+    {
+    case Service::AM::InstallStatus::Success:
+      break;
+    case Service::AM::InstallStatus::ErrorEncrypted:
+      reason = "error.cia_encrypted";
+      break;
+    case Service::AM::InstallStatus::ErrorInvalid:
+      reason = "error.cia_invalid";
+      break;
+    case Service::AM::InstallStatus::ErrorAborted:
+      reason = "error.cia_aborted";
+      break;
+    default:
+      reason = "error.cia_unreadable";
+      break;
+    }
+    if (!reason)
+      fprintf(stderr, "[azahar] installed %s\n", name.c_str());
+    if (reason)
+    {
+      g_error = "error.cia_install" TEXT_ARG + name + TEXT_ARG + reason;
+      return false;
+    }
+  }
+  for (const auto& path : ChimeraFSHost::Files("/user/sdmc"))
+  {
+    const uint64_t now = ChimeraFSHost::Fingerprint(path);
+    const auto was = before.find(path);
+    if (was == before.end() || was->second != now)
+      g_installed[path] = now;
+  }
+  if (!HasExtension(game, ".cia"))
+    return true;
+  // Which title the game's .cia is, and where its program is now.
+  const std::string name = game.substr(game.rfind('/') + 1);
+  const auto info = Service::AM::GetCIAInfos(game);
+  if (info.Failed())
+  {
+    g_error = "error.cia_install" TEXT_ARG + name + TEXT_ARG "error.cia_invalid";
+    return false;
+  }
+  const u64 tid = info.Unwrap().first.tid;
+  // 0x00040000 an application, 0x00040002 a demo; updates (0x0004000E), DLC
+  // (0x0004008C) and the system's own titles are not a game to start.
+  const u32 category = static_cast<u32>(tid >> 32);
+  if (category != 0x00040000 && category != 0x00040002)
+  {
+    g_error = "error.cia_not_game" TEXT_ARG + name;
+    return false;
+  }
+  boot = Service::AM::GetTitleContentPath(Service::AM::GetTitleMediaType(tid), tid);
+  if (boot.empty() || !FileUtil::Exists(boot))
+  {
+    g_error = "error.cia_not_installed" TEXT_ARG + name;
+    return false;
+  }
+  return true;
+}
+
 void ApplyMachine(const Machine& m)
 {
   auto& v = Settings::values;
@@ -440,7 +532,7 @@ void SetLogLevel(int level)
   Common::Log::SetDirectLevel(static_cast<Common::Log::Level>(level));
 }
 
-bool Init(const Machine& m, const std::string& rom)
+bool Init(const Machine& m, const std::string& rom, const std::vector<std::string>& installs)
 {
   g_machine = m;
   ResetInputs();
@@ -487,14 +579,26 @@ bool Init(const Machine& m, const std::string& rom)
   system.RegisterImageInterface(std::make_shared<Frontend::ImageInterface>());
 
   g_window = std::make_unique<Window>();
+  // A game that is a .cia, and any DLC or updates: installed now, into the
+  // machine's own SD card, the same way at every boot.
+  std::string boot = rom;
+  g_installed.clear();
+  {
+    std::vector<std::string> cias;
+    if (HasExtension(rom, ".cia"))
+      cias.push_back(rom);
+    cias.insert(cias.end(), installs.begin(), installs.end());
+    if (!cias.empty() && !InstallCias(cias, rom, boot))
+      return false;
+  }
   // The game's header first, the way the libretro frontend does it: System::
   // Load reports an encrypted game as "cannot determine the system mode",
   // which tells a person nothing. The loader is handed on, not opened twice.
   {
-    auto loader = Loader::GetLoader(rom);
+    auto loader = Loader::GetLoader(boot);
     if (!loader)
     {
-      g_error = "error.no_loader" TEXT_ARG + rom;
+      g_error = "error.no_loader" TEXT_ARG + boot;
       return false;
     }
     const auto [mode, status] = loader->LoadKernelMemoryMode();
@@ -516,7 +620,7 @@ bool Init(const Machine& m, const std::string& rom)
     }
     system.RegisterAppLoaderEarly(loader);
   }
-  const auto result = system.Load(*g_window, rom);
+  const auto result = system.Load(*g_window, boot);
   switch (result)
   {
   case Core::System::ResultStatus::Success:
@@ -531,7 +635,7 @@ bool Init(const Machine& m, const std::string& rom)
     g_error = "error.gba_title";
     return false;
   case Core::System::ResultStatus::ErrorGetLoader:
-    g_error = "error.no_loader" TEXT_ARG + rom;
+    g_error = "error.no_loader" TEXT_ARG + boot;
     return false;
   case Core::System::ResultStatus::ErrorSystemFiles:
     g_error = "error.no_system_archive" TEXT_ARG + system.GetStatusDetails();
@@ -732,6 +836,11 @@ std::vector<SaveFile> ExportSaveData()
   std::vector<SaveFile> out;
   for (const auto& path : ChimeraFSHost::Files("/user/sdmc"))
   {
+    // an installed .cia, as the project's files made it, is not the game's
+    // save: whatever the game wrote into it still is
+    const auto installed = g_installed.find(path);
+    if (installed != g_installed.end() && installed->second == ChimeraFSHost::Fingerprint(path))
+      continue;
     SaveFile f;
     f.name = path.substr(std::strlen("/user/"));
     if (ChimeraFSHost::ReadFile(path, f.bytes))

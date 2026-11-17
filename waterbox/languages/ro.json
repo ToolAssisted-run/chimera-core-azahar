@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Numele de utilizator nu este unul pe care îl poate păstra consola: trebuie să aibă de la unu la zece caractere.",
+		"error.cia_aborted": "instalarea s-a oprit la jumătate",
+		"error.cia_encrypted": "conținutul este criptat, iar Azahar instalează doar fișiere .cia decriptate",
+		"error.cia_install": "Fișierul .cia „%1” nu a putut fi instalat: %2.",
+		"error.cia_invalid": "nu este un fișier .cia pe care Azahar îl poate citi",
+		"error.cia_not_game": "„%1” nu este un joc: este conținut descărcabil, o actualizare sau un titlu de sistem. Puneți-l la „Mai multe fișiere instalabile”, iar un joc la „Joc”.",
+		"error.cia_not_installed": "„%1” a fost instalat, dar programul său nu este pe cardul SD.",
+		"error.cia_twice": "Fișierul .cia „%1” este de două ori în proiect sau este și jocul.",
+		"error.cia_unreadable": "nu poate fi citit",
 		"error.encrypted": "Jocul este criptat. Azahar rulează doar copii decriptate (.3ds, .cci sau .cxi decriptate, ori homebrew .3dsx).",
 		"error.gba_title": "Acesta este un titlu GBA Virtual Console, iar Azahar nu le rulează.",
 		"error.no_file": "Niciun joc: proiectul nu numește niciunul, sau '%1' nu există.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Nu există o rezoluție internă %1.",
 		"error.no_system_archive": "Lipsește o arhivă de sistem 3DS: %1",
 		"error.not_booted": "Azahar nu a putut porni jocul (starea %1): %2",
-		"error.not_format": "Fișierul jocului nu este un format pe care îl citește Azahar (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Fișierul jocului nu este un format pe care îl citește Azahar (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Jocul '%1' nu poate fi deschis.",
 		"error.save_empty": "Datele salvate '%1' nu conțin fișiere.",
 		"error.save_not_sd": "Datele salvate conțin '%1', care nu este al cardului SD: fiecare intrare este sdmc/..., așa cum le scrie Export Save Data.",
@@ -66,7 +74,9 @@
 		"setting.username": "Nume de utilizator",
 		"setting.username.about": "Numele de utilizator din setările consolei, de la unu la zece caractere. Jocurile îl citesc, de exemplu ca proprietar al unui fișier de salvare sau într-un salut. Face parte din aparat, deci o înregistrare făcută cu un nume are nevoie de acel nume. Lăsat gol, devine implicitul Azahar, AZAHAR.",
 		"slot.game": "Joc",
-		"slot.game.help": "Un dump DECRIPTAT. Poate fi un cartuș (.3ds sau .cci), un executabil (.cxi sau .app) sau homebrew (.3dsx sau .elf). Azahar nu decriptează. Un dump criptat este refuzat cu un mesaj care o spune. Un dump vechi care a fost decriptat, dar al cărui antet mai spune 'encrypted', este recunoscut și rulează.",
+		"slot.game.help": "Un dump DECRIPTAT. Poate fi un cartuș (.3ds sau .cci), un executabil (.cxi sau .app) sau homebrew (.3dsx sau .elf). Azahar nu decriptează. Un dump criptat este refuzat cu un mesaj care o spune. Un dump vechi care a fost decriptat, dar al cărui antet mai spune 'encrypted', este recunoscut și rulează. Este acceptat și un .cia decriptat: consola îl instalează pe cardul SD la pornire.",
+		"slot.install": "Mai multe fișiere instalabile",
+		"slot.install.help": "Fișiere .cia decriptate pe care consola le instalează pe cardul SD la pornire, după joc: conținut descărcabil și actualizări, în această ordine. Se instalează din nou la fiecare pornire, așa că Exportă datele salvate nu le conține.",
 		"slot.savedata": "Datele salvate",
 		"slot.savedata.help": "Ce a salvat deja jocul, așa cum le-a scris Emulator > Export Save Data.... Este un .zip al dosarului 'Nintendo 3DS' de pe cardul SD (datele de salvare ale jocului și datele suplimentare). Este pus înapoi pe cardul SD al aparatului înainte să pornească jocul."
 	}

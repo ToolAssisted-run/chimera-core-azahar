@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Brugernavnet er ikke et, konsollen kan rumme: det skal være fra et til ti tegn.",
+		"error.cia_aborted": "installationen stoppede halvvejs",
+		"error.cia_encrypted": "indholdet er krypteret, og Azahar installerer kun dekrypterede .cia-filer",
+		"error.cia_install": "Filen .cia '%1' kunne ikke installeres: %2.",
+		"error.cia_invalid": "det er ikke en .cia-fil, som Azahar kan læse",
+		"error.cia_not_game": "'%1' er ikke et spil: det er indhold, der kan hentes, en opdatering eller en systemtitel. Læg den i 'Flere installerbare filer', og et spil i 'Spil'.",
+		"error.cia_not_installed": "'%1' blev installeret, men dens program er ikke på SD-kortet.",
+		"error.cia_twice": "Filen .cia '%1' er med to gange i projektet, eller er også spillet.",
+		"error.cia_unreadable": "den kan ikke læses",
 		"error.encrypted": "Spillet er krypteret. Azahar kører kun dekrypterede kopier (.3ds, .cci eller .cxi dekrypteret, eller .3dsx hjemmelavet).",
 		"error.gba_title": "Dette er en GBA Virtual Console-titel, og Azahar kører ikke dem.",
 		"error.no_file": "Intet spil: projektet nævner ingen, eller '%1' findes ikke.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Der findes ingen intern opløsning %1.",
 		"error.no_system_archive": "Et 3DS-systemarkiv mangler: %1",
 		"error.not_booted": "Azahar kunne ikke starte spillet (status %1): %2",
-		"error.not_format": "Spilfilen er ikke et format, Azahar læser (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Spilfilen er ikke et format, Azahar læser (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Spillet '%1' kan ikke åbnes.",
 		"error.save_empty": "De gemte data '%1' indeholder ingen filer.",
 		"error.save_not_sd": "De gemte data indeholder '%1', som ikke er SD-kortets: hver post er sdmc/..., sådan som Eksportér gemte data skriver dem.",
@@ -66,7 +74,9 @@
 		"setting.username": "Brugernavn",
 		"setting.username.about": "Brugernavnet i konsollens egne indstillinger, fra et til ti tegn. Spil læser det, for eksempel som ejer af en gemmefil eller i en hilsen. Det er en del af maskinen, så en optagelse lavet med ét navn kræver det navn. Står feltet tomt, bruges standarden i Azahar, AZAHAR.",
 		"slot.game": "Spil",
-		"slot.game.help": "En DEKRYPTERET kopi. Det kan være et patron (.3ds eller .cci), et program (.cxi eller .app) eller hjemmelavet software (.3dsx eller .elf). Azahar dekrypterer ikke. En krypteret kopi afvises med en meddelelse, der siger det. En gammel kopi, der er dekrypteret, men hvis header stadig siger 'encrypted', genkendes og kører.",
+		"slot.game.help": "En DEKRYPTERET kopi. Det kan være et patron (.3ds eller .cci), et program (.cxi eller .app) eller hjemmelavet software (.3dsx eller .elf). Azahar dekrypterer ikke. En krypteret kopi afvises med en meddelelse, der siger det. En gammel kopi, der er dekrypteret, men hvis header stadig siger 'encrypted', genkendes og kører. En dekrypteret .cia tages også imod: konsollen installerer den på SD-kortet ved start.",
+		"slot.install": "Flere installerbare filer",
+		"slot.install.help": "Dekrypterede .cia-filer, som konsollen installerer på SD-kortet ved start, efter spillet: indhold, der kan hentes, og opdateringer, i denne rækkefølge. De installeres på ny ved hver start, så Eksportér gemte data indeholder dem ikke.",
 		"slot.savedata": "Gemte data",
 		"slot.savedata.help": "Det spillet allerede har gemt, sådan som Emulator > Eksportér gemte data... skrev det. Det er en .zip af SD-kortets mappe 'Nintendo 3DS' (spillets gemte data og ekstra data). Det lægges tilbage på maskinens SD-kort, før spillet starter."
 	}

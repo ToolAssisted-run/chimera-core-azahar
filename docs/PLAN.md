@@ -372,8 +372,8 @@ screen.
   first frame on (1200 frames: 150 s of processor time in the sandbox, 132 s
   native, on a busy machine), so it is the software renderer, not the
   sandbox. The OpenGL renderer (`opengl-hw`) is the setting for speed.
-- `.cia` installs, seeded eShop titles and anything needing `aes_keys.txt`
-  are declared but not tested (no keys here).
+- Seeded eShop titles and anything needing `aes_keys.txt` are declared but
+  not tested (no keys here).
 - Motion input is wired and declared but no test game uses it.
 - The HLE software keyboard answers with its default text; not seen in a
   game yet.
@@ -391,3 +391,34 @@ delete one it had just made (Dolphin's vertex arrays drew a grey screen
 black). Nothing in this core's own code changed: its build generates the
 wrappers from miniBox, so this note is the commit that rebuilds it. A test
 runner's host half answers the new opcode with nothing (miniBox b7bc1a2).
+
+## .cia files (chimera#598)
+
+A `.cia` as the game, and a project slot `install` (up to 32 files) for more
+of them: downloadable content and updates.
+
+- At `Init`, before the machine starts and before anything is sealed, the
+  driver installs each file with Azahar's own `Service::AM::InstallCIA`
+  (the game first, then the slot's files in order) into the SD card of the
+  machine's in-memory filesystem. The game then starts from its installed
+  program, the way Azahar's own game list starts an installed title. Nothing
+  reads the host's time or randomness there, so every start is the same; a
+  state taken later carries only what changed after the install.
+- Each file is mounted once, in a fixed order, like the game.
+- Azahar's installer refuses a `.cia` whose TMD marks its content encrypted
+  (a retail eShop dump), whatever keys the project has. That is upstream's
+  behaviour (`InstallStatus::ErrorEncrypted`), kept: the load error says so.
+  A decrypted `.cia` (made by the usual decrypting tools) installs.
+- The installed files come from the project's own files at every start, so
+  `ExportSaveData` leaves out every SD file an install wrote (by a
+  fingerprint of its bytes taken after the installs) and exports what the
+  game wrote, including a game's own write into an installed folder.
+  Without that, a save zip would hold the whole game and the next start would
+  meet it already installed.
+- Memory: an installed file lives in the machine's memory (the 3 GB heap
+  holds the console's 256 MB, the renderer and the installs), so a `.cia` of
+  more than a couple of gigabytes does not fit.
+- Tests: `tests/cia/make-test-cia.py` writes a small decrypted `.cia` with
+  made-up content (a title id of your choice: DLC, update), or, with
+  `--ncsd`, a decrypted `.cia` of a decrypted dump you have. The gate's
+  leg 3c uses both on `drancia.cci`.

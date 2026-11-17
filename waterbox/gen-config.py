@@ -67,7 +67,7 @@ AXES = [
 
 INPUT_NAME = "Nintendo 3DS"
 
-GAME_FORMATS = ["3ds", "cci", "cxi", "app", "3dsx", "elf"]
+GAME_FORMATS = ["3ds", "cci", "cxi", "app", "3dsx", "elf", "cia"]
 
 config = {
     "coreName": "Azahar",
@@ -361,7 +361,20 @@ slots = {
                 "executable (.cxi or .app) or homebrew (.3dsx or .elf). "
                 "Azahar does not decrypt. An encrypted dump is refused with "
                 "a message that says so. An old dump that was decrypted but "
-                "whose header still says 'encrypted' is recognised and runs."),
+                "whose header still says 'encrypted' is recognised and runs. "
+                "A decrypted .cia is also accepted: the console installs it "
+                "on its SD card when it starts."),
+        },
+        {
+            "id": "install",
+            "title": text("slot.install", "More installable files"),
+            "min": 0,
+            "max": 32,
+            "formats": ["cia"],
+            "help": text("slot.install.help", "Decrypted .cia files the console installs on its SD "
+                "card when it starts, after the game: downloadable content "
+                "and updates, in this order. They are installed afresh at "
+                "every start, so Export Save Data does not hold them."),
         },
         {
             "id": "savedata",

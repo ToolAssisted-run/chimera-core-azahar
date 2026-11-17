@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "De gebruikersnaam is er geen die de console kan bewaren: hij moet uit één tot tien tekens bestaan.",
+		"error.cia_aborted": "de installatie stopte halverwege",
+		"error.cia_encrypted": "de inhoud is versleuteld, en Azahar installeert alleen ontsleutelde .cia-bestanden",
+		"error.cia_install": "Het .cia-bestand '%1' kon niet worden geïnstalleerd: %2.",
+		"error.cia_invalid": "het is geen .cia-bestand dat Azahar kan lezen",
+		"error.cia_not_game": "'%1' is geen spel: het is downloadbare inhoud, een update of een systeemtitel. Zet het bij 'Meer installeerbare bestanden' en een spel bij 'Spel'.",
+		"error.cia_not_installed": "'%1' is geïnstalleerd, maar het programma staat niet op de SD-kaart.",
+		"error.cia_twice": "Het .cia-bestand '%1' staat twee keer in het project, of is ook het spel.",
+		"error.cia_unreadable": "het kan niet worden gelezen",
 		"error.encrypted": "Het spel is versleuteld. Azahar draait alleen ontsleutelde dumps (.3ds, .cci of .cxi ontsleuteld, of .3dsx-homebrew).",
 		"error.gba_title": "Dit is een titel van de GBA Virtual Console, en Azahar draait die niet.",
 		"error.no_file": "Geen spel: het project noemt er geen, of '%1' is er niet.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Er is geen interne resolutie %1.",
 		"error.no_system_archive": "Een systeemarchief van de 3DS ontbreekt: %1",
 		"error.not_booted": "Azahar kon het spel niet opstarten (status %1): %2",
-		"error.not_format": "Het spelbestand is geen formaat dat Azahar leest (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Het spelbestand is geen formaat dat Azahar leest (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Het spel '%1' kan niet worden geopend.",
 		"error.save_empty": "De opgeslagen gegevens '%1' bevatten geen bestanden.",
 		"error.save_not_sd": "De opgeslagen gegevens bevatten '%1', dat niet van de SD-kaart is: elk item is sdmc/..., zoals Export Save Data ze schrijft.",
@@ -66,7 +74,9 @@
 		"setting.username": "Gebruikersnaam",
 		"setting.username.about": "De gebruikersnaam in de eigen instellingen van de console, één tot tien tekens. Spellen lezen die uit, bijvoorbeeld als eigenaar van een savebestand of in een begroeting. Het hoort bij de machine, dus een opname die met één naam is gemaakt, heeft die naam nodig. Blijft hij leeg, dan is het de standaard van Azahar, AZAHAR.",
 		"slot.game": "Spel",
-		"slot.game.help": "Een ONTSLEUTELDE dump. Het kan een cartridge zijn (.3ds of .cci), een programma (.cxi of .app) of homebrew (.3dsx of .elf). Azahar ontsleutelt niet. Een versleutelde dump wordt geweigerd met een melding die dat zegt. Een oude dump die wel is ontsleuteld, maar waarvan de kop nog 'encrypted' zegt, wordt herkend en draait.",
+		"slot.game.help": "Een ONTSLEUTELDE dump. Het kan een cartridge zijn (.3ds of .cci), een programma (.cxi of .app) of homebrew (.3dsx of .elf). Azahar ontsleutelt niet. Een versleutelde dump wordt geweigerd met een melding die dat zegt. Een oude dump die wel is ontsleuteld, maar waarvan de kop nog 'encrypted' zegt, wordt herkend en draait. Een ontsleuteld .cia wordt ook aangenomen: de console installeert het bij het starten op zijn SD-kaart.",
+		"slot.install": "Meer installeerbare bestanden",
+		"slot.install.help": "Ontsleutelde .cia-bestanden die de console bij het starten op zijn SD-kaart installeert, na het spel: downloadbare inhoud en updates, in deze volgorde. Ze worden bij elke start opnieuw geïnstalleerd, dus Opslaggegevens exporteren bevat ze niet.",
 		"slot.savedata": "Opgeslagen gegevens",
 		"slot.savedata.help": "Wat het spel al had opgeslagen, zoals Emulator > Export Save Data... het schreef. Het is een .zip van de map 'Nintendo 3DS' op de SD-kaart (de opgeslagen gegevens en extra gegevens van het spel). Het wordt teruggezet op de SD-kaart van de machine voordat het spel start."
 	}

@@ -298,6 +298,12 @@ them absent, none of the legs below runs:
   top screen reaches nothing); save data goes out and back in; a file that is
   not a save zip is refused; the clock at power-on and the model are part of
   the machine.
+- `drancia.cci`, as a `.cia`: a decrypted `.cia` of the game, made from the
+  dump on the spot, starts the picture the `.cci` starts; a game, made-up
+  downloadable content and an update install in order; native == sandbox with
+  them; Export Save Data leaves the installed files out; a file that is not a
+  `.cia`, an encrypted one, content given as the game, and a file given twice
+  are refused.
 - `cars2.3ds`: an encrypted dump, made from it on the spot, is refused.
 - the engine: the package through `<chimera>/build/meson-linux/chimera-run`
   with a movie. It needs `drancia.cci`, `chimera-run` and the package.

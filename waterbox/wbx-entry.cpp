@@ -147,6 +147,30 @@ ECL_EXPORT int Init(void)
     snprintf(g_loadError, sizeof g_loadError, "error.not_opened" TEXT_ARG "%s", base);
     return 0;
   }
+  // More .cia files to install (DLC and updates), each opened once, in the
+  // slot's order, after the game and before the keys: the order is part of
+  // the machine, and so is each one's name (the install's file names).
+  std::vector<std::string> installs;
+  for (int i = 0, n = wbx_slot_count("install"); i < n; i++)
+  {
+    char name[512];
+    if (!wbx_slot_name("install", i, name, sizeof name))
+      break;
+    const char* b = strrchr(name, '/');
+    b = b ? b + 1 : name;
+    const std::string path = std::string("/game/") + b;
+    if (!strcmp(b, base) || std::find(installs.begin(), installs.end(), path) != installs.end())
+    {
+      snprintf(g_loadError, sizeof g_loadError, "error.cia_twice" TEXT_ARG "%s", b);
+      return 0;
+    }
+    if (!Exists(b) || !ChimeraFSHost::MountFile(path, b))
+    {
+      snprintf(g_loadError, sizeof g_loadError, "error.not_opened" TEXT_ARG "%s", b);
+      return 0;
+    }
+    installs.push_back(path);
+  }
   // Keys and seeds, if the project carries them: a decrypted cartridge needs
   // neither. Upstream would compile Nintendo's keys into the core; this one
   // is built without them (ENABLE_BUILTIN_KEYBLOB=OFF).
@@ -249,7 +273,7 @@ ECL_EXPORT int Init(void)
   m.large_proportion = static_cast<int>(wbx_setting_long("large_screen_proportion", 4));
   m.linear_filter = wbx_setting_bool("linear_filter", 1) != 0;
 
-  if (!ChimeraAzahar::Init(m, romPath))
+  if (!ChimeraAzahar::Init(m, romPath, installs))
   {
     snprintf(g_loadError, sizeof g_loadError, "%s", ChimeraAzahar::Error());
     return 0;

@@ -71,7 +71,13 @@ void SurfaceMemory(void* block, size_t blockBytes, void* scratch, size_t scratch
 
 /// Boot. `rom` is the game's path in the machine's filesystem (see
 /// chimera-fs-host.h). Returns false with Error() set.
-bool Init(const Machine& m, const std::string& rom);
+///
+/// A game that is a .cia is installed on the console's SD card, in the
+/// machine's own filesystem, as Azahar installs one, and started from there.
+/// `installs` are more .cia files (DLC, updates) installed the same way, in
+/// this order, after the game and before it starts. The install is part of
+/// Init and runs the same way at every boot, before the machine is sealed.
+bool Init(const Machine& m, const std::string& rom, const std::vector<std::string>& installs = {});
 const char* Error();
 void SetLogLevel(int level);  // Common::Log::Level; default Critical
 

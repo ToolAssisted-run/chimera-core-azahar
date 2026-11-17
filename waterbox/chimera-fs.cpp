@@ -27,6 +27,7 @@
 
 #include "chimera-fs-host.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -537,6 +538,34 @@ std::vector<std::string> Files(const std::string& under)
     if (!it->second.dir)
       out.push_back(it->first);
   return out;
+}
+
+uint64_t Fingerprint(const std::string& path)
+{
+  Node* n = Find(Normalize(path));
+  if (!n || n->dir)
+    return 0;
+  // FNV-1a over the bytes in 64-bit words, and the size in front, read a
+  // block at a time (an installed game is a hundred megabytes or more)
+  uint64_t h = 1469598103934665603ull ^ n->data->Size();
+  std::vector<uint8_t> block(1 << 20);
+  for (uint64_t at = 0; at < n->data->Size();)
+  {
+    const size_t want = static_cast<size_t>(std::min<uint64_t>(block.size(), n->data->Size() - at));
+    if (ReadData(*n->data, at, block.data(), want) != want)
+      return 0;
+    size_t i = 0;
+    for (; i + 8 <= want; i += 8)
+    {
+      uint64_t w;
+      std::memcpy(&w, block.data() + i, 8);
+      h = (h ^ w) * 1099511628211ull;
+    }
+    for (; i < want; i++)
+      h = (h ^ block[i]) * 1099511628211ull;
+    at += want;
+  }
+  return h;
 }
 
 bool ReadFile(const std::string& path, std::vector<uint8_t>& out)

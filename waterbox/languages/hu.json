@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "A felhasználónév nem olyan, amelyet a konzol tárolni tud: egytől tíz karakterig kell lennie.",
+		"error.cia_aborted": "a telepítés félúton megállt",
+		"error.cia_encrypted": "a tartalma titkosított, az Azahar pedig csak visszafejtett .cia fájlokat telepít",
+		"error.cia_install": "A(z) „%1” .cia fájlt nem sikerült telepíteni: %2.",
+		"error.cia_invalid": "nem olyan .cia fájl, amelyet az Azahar el tudna olvasni",
+		"error.cia_not_game": "A(z) „%1” nem játék: letölthető tartalom, frissítés vagy rendszercím. Tegye a „További telepíthető fájlok” közé, a játékot pedig a „Játék” helyre.",
+		"error.cia_not_installed": "A(z) „%1” telepítve lett, de a programja nincs az SD-kártyán.",
+		"error.cia_twice": "A(z) „%1” .cia fájl kétszer szerepel a projektben, vagy egyben a játék is.",
+		"error.cia_unreadable": "nem olvasható",
 		"error.encrypted": "A játék titkosított. Az Azahar csak visszafejtett másolatokat futtat (visszafejtett .3ds, .cci vagy .cxi, vagy .3dsx homebrew).",
 		"error.gba_title": "Ez egy GBA Virtual Console cím, és az Azahar ilyeneket nem futtat.",
 		"error.no_file": "Nincs játék: a projekt nem nevez meg egyet, vagy a(z) '%1' nincs ott.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Nincs %1 belső felbontás.",
 		"error.no_system_archive": "Egy 3DS-rendszerarchívum hiányzik: %1",
 		"error.not_booted": "Az Azahar nem tudta elindítani a játékot (állapot: %1): %2",
-		"error.not_format": "A játékfájl nem olyan formátum, amelyet az Azahar olvas (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "A játékfájl nem olyan formátum, amelyet az Azahar olvas (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "A(z) '%1' játék nem nyitható meg.",
 		"error.save_empty": "A(z) '%1' mentett adat nem tartalmaz fájlokat.",
 		"error.save_not_sd": "A(z) '%1' mentett adat nem az SD-kártyáé: minden bejegyzése sdmc/..., ahogyan az Export Save Data írja.",
@@ -66,7 +74,9 @@
 		"setting.username": "Felhasználónév",
 		"setting.username.about": "A felhasználónév a konzol saját beállításaiban, egytől tíz karakterig. A játékok beolvassák, például egy mentésfájl tulajdonosaként vagy egy üdvözlésben. A gép része, ezért a movie-nak az a név kell, amellyel készült. Üresen hagyva az Azahar alapértéke, az AZAHAR.",
 		"slot.game": "Játék",
-		"slot.game.help": "VISSZAFEJTETT másolat. Lehet kazetta (.3ds vagy .cci), futtatható fájl (.cxi vagy .app) vagy homebrew (.3dsx vagy .elf). Az Azahar nem fejt vissza. Egy titkosított másolat elutasításra kerül, és ezt üzenet jelzi. Egy régi másolat, amelyet visszafejtettek, de a fejléce még 'encrypted'-et mond, felismerésre kerül, és fut.",
+		"slot.game.help": "VISSZAFEJTETT másolat. Lehet kazetta (.3ds vagy .cci), futtatható fájl (.cxi vagy .app) vagy homebrew (.3dsx vagy .elf). Az Azahar nem fejt vissza. Egy titkosított másolat elutasításra kerül, és ezt üzenet jelzi. Egy régi másolat, amelyet visszafejtettek, de a fejléce még 'encrypted'-et mond, felismerésre kerül, és fut. Visszafejtett .cia is elfogadott: a konzol indításkor telepíti az SD-kártyájára.",
+		"slot.install": "További telepíthető fájlok",
+		"slot.install.help": "Visszafejtett .cia fájlok, amelyeket a konzol indításkor, a játék után telepít az SD-kártyájára: letölthető tartalmak és frissítések, ebben a sorrendben. Minden indításkor újra települnek, ezért a Mentett adatok exportálása nem tartalmazza őket.",
 		"slot.savedata": "Mentett adat",
 		"slot.savedata.help": "Amit a játék már elmentett, ahogyan az Emulator > Export Save Data... írta. Ez az SD-kártya 'Nintendo 3DS' mappájának (a játék mentett adata és extra adata) egy .zip fájlja. A játék indulása előtt visszakerül a gép SD-kártyájára."
 	}

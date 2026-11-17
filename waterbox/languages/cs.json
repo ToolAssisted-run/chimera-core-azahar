@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Uživatelské jméno konzole neunese: musí mít od jednoho do deseti znaků.",
+		"error.cia_aborted": "instalace se zastavila v půlce",
+		"error.cia_encrypted": "jeho obsah je zašifrovaný a Azahar instaluje jen dešifrované soubory .cia",
+		"error.cia_install": "Soubor .cia „%1“ nešlo nainstalovat: %2.",
+		"error.cia_invalid": "není to soubor .cia, který by Azahar uměl číst",
+		"error.cia_not_game": "„%1“ není hra: je to stahovatelný obsah, aktualizace nebo systémový titul. Dejte ho do „Další instalovatelné soubory“ a hru do „Hra“.",
+		"error.cia_not_installed": "„%1“ byl nainstalován, ale jeho program na kartě SD není.",
+		"error.cia_twice": "Soubor .cia „%1“ je v projektu dvakrát, nebo je zároveň hrou.",
+		"error.cia_unreadable": "nejde přečíst",
 		"error.encrypted": "Hra je šifrovaná. Azahar spouští jen dešifrované výpisy (.3ds, .cci nebo .cxi dešifrované, nebo domácí výrobky .3dsx).",
 		"error.gba_title": "Toto je titul GBA Virtual Console a Azahar je nespouští.",
 		"error.no_file": "Žádná hra: projekt žádnou neuvádí, nebo '%1' tam není.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Neexistuje vnitřní rozlišení %1.",
 		"error.no_system_archive": "Chybí systémový archiv 3DS: %1",
 		"error.not_booted": "Azahar nemohl spustit hru (stav %1): %2",
-		"error.not_format": "Soubor hry není formát, který Azahar čte (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Soubor hry není formát, který Azahar čte (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Hru '%1' nelze otevřít.",
 		"error.save_empty": "Uložená data '%1' neobsahují žádné soubory.",
 		"error.save_not_sd": "Uložená data obsahují '%1', což není záznam karty SD: každá položka je sdmc/..., jak je zapisuje Exportovat uložená data.",
@@ -66,7 +74,9 @@
 		"setting.username": "Uživatelské jméno",
 		"setting.username.about": "Uživatelské jméno v nastavení konzole, od jednoho do deseti znaků. Hry ho čtou, například jako majitele uloženého souboru nebo v pozdravu. Je součástí stroje, takže záznam pořízený s jedním jménem potřebuje toto jméno. Když zůstane prázdné, je to výchozí hodnota Azahar, AZAHAR.",
 		"slot.game": "Hra",
-		"slot.game.help": "DEŠIFROVANÝ výpis. Může to být kazeta (.3ds nebo .cci), spustitelný soubor (.cxi nebo .app), nebo domácí výrobek (.3dsx nebo .elf). Azahar nedešifruje. Zašifrovaný výpis se odmítne se zprávou, která to řekne. Starý výpis, který byl dešifrován, ale jehož hlavička stále říká 'encrypted', se rozpozná a spustí se.",
+		"slot.game.help": "DEŠIFROVANÝ výpis. Může to být kazeta (.3ds nebo .cci), spustitelný soubor (.cxi nebo .app), nebo domácí výrobek (.3dsx nebo .elf). Azahar nedešifruje. Zašifrovaný výpis se odmítne se zprávou, která to řekne. Starý výpis, který byl dešifrován, ale jehož hlavička stále říká 'encrypted', se rozpozná a spustí se. Přijímá se i dešifrovaný .cia: konzole ho při spuštění nainstaluje na kartu SD.",
+		"slot.install": "Další instalovatelné soubory",
+		"slot.install.help": "Dešifrované soubory .cia, které konzole při spuštění nainstaluje na kartu SD po hře: stahovatelný obsah a aktualizace, v tomto pořadí. Při každém spuštění se instalují znovu, takže je Export uložených dat neobsahuje.",
 		"slot.savedata": "Uložená data",
 		"slot.savedata.help": "Co hra už uložila, jak to zapsal Emulátor > Exportovat uložená data... Je to .zip složky 'Nintendo 3DS' z karty SD (uložená data hry a další data). Před startem hry se vrátí na SD kartu stroje."
 	}

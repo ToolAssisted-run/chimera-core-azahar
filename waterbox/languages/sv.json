@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Användarnamnet är inte ett som konsolen kan hålla: det måste vara ett till tio tecken.",
+		"error.cia_aborted": "installationen avbröts halvvägs",
+		"error.cia_encrypted": "innehållet är krypterat, och Azahar installerar bara dekrypterade .cia-filer",
+		"error.cia_install": ".cia-filen ”%1” kunde inte installeras: %2.",
+		"error.cia_invalid": "det är inte en .cia-fil som Azahar kan läsa",
+		"error.cia_not_game": "”%1” är inte ett spel: det är nedladdningsbart innehåll, en uppdatering eller en systemtitel. Lägg den under ”Fler installerbara filer” och ett spel under ”Spel”.",
+		"error.cia_not_installed": "”%1” installerades, men dess program finns inte på SD-kortet.",
+		"error.cia_twice": ".cia-filen ”%1” finns två gånger i projektet, eller är också spelet.",
+		"error.cia_unreadable": "den kan inte läsas",
 		"error.encrypted": "Spelet är krypterat. Azahar kör bara dekrypterade kopior (.3ds, .cci eller .cxi dekrypterade, eller .3dsx hemmagjorda program).",
 		"error.gba_title": "Det här är en GBA Virtual Console-titel, och Azahar kör inte sådana.",
 		"error.no_file": "Inget spel: projektet anger inget, eller så finns '%1' inte.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Det finns ingen intern upplösning %1.",
 		"error.no_system_archive": "Ett 3DS-systemarkiv saknas: %1",
 		"error.not_booted": "Azahar kunde inte starta spelet (status %1): %2",
-		"error.not_format": "Spelfilen är inte ett format som Azahar läser (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Spelfilen är inte ett format som Azahar läser (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Spelet '%1' kan inte öppnas.",
 		"error.save_empty": "Den sparade datan '%1' innehåller inga filer.",
 		"error.save_not_sd": "Den sparade datan innehåller '%1', som inte är SD-kortets: varje post är sdmc/..., så som Exportera sparad data skriver dem.",
@@ -66,7 +74,9 @@
 		"setting.username": "Användarnamn",
 		"setting.username.about": "Användarnamnet i konsolens egna inställningar, ett till tio tecken. Spel läser det, till exempel som ägare av en sparfil eller i en hälsning. Det är en del av maskinen, så en film gjord med ett namn behöver det namnet. Lämnas det tomt används standarden i Azahar, AZAHAR.",
 		"slot.game": "Spel",
-		"slot.game.help": "En DEKRYPTERAD kopia. Det kan vara en patron (.3ds eller .cci), en körbar fil (.cxi eller .app) eller hemmagjorda program (.3dsx eller .elf). Azahar dekrypterar inte. En krypterad kopia avvisas med ett meddelande som säger det. En gammal kopia som dekrypterats men vars huvud fortfarande säger 'encrypted' känns igen och körs.",
+		"slot.game.help": "En DEKRYPTERAD kopia. Det kan vara en patron (.3ds eller .cci), en körbar fil (.cxi eller .app) eller hemmagjorda program (.3dsx eller .elf). Azahar dekrypterar inte. En krypterad kopia avvisas med ett meddelande som säger det. En gammal kopia som dekrypterats men vars huvud fortfarande säger 'encrypted' känns igen och körs. En dekrypterad .cia tas också emot: konsolen installerar den på sitt SD-kort vid start.",
+		"slot.install": "Fler installerbara filer",
+		"slot.install.help": "Dekrypterade .cia-filer som konsolen installerar på sitt SD-kort vid start, efter spelet: nedladdningsbart innehåll och uppdateringar, i den här ordningen. De installeras om vid varje start, så Exportera sparad data innehåller dem inte.",
 		"slot.savedata": "Sparad data",
 		"slot.savedata.help": "Det spelet redan sparat, så som Emulator > Exportera sparad data... skrev det. Det är en .zip av SD-kortets mapp 'Nintendo 3DS' (spelets sparade data och extra data). Den läggs tillbaka på maskinens SD-kort innan spelet startar."
 	}

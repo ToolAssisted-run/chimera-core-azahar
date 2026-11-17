@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Käyttäjänimi ei ole sellainen, jonka konsoli voi pitää: sen on oltava yhdestä kymmeneen merkkiä.",
+		"error.cia_aborted": "asennus pysähtyi kesken",
+		"error.cia_encrypted": "sen sisältö on salattu, ja Azahar asentaa vain salaamattomia .cia-tiedostoja",
+		"error.cia_install": "Tiedostoa .cia ”%1” ei voitu asentaa: %2.",
+		"error.cia_invalid": "se ei ole .cia-tiedosto, jonka Azahar osaa lukea",
+		"error.cia_not_game": "”%1” ei ole peli: se on ladattavaa sisältöä, päivitys tai järjestelmänimike. Laita se kohtaan ”Lisää asennettavia tiedostoja” ja peli kohtaan ”Peli”.",
+		"error.cia_not_installed": "”%1” asennettiin, mutta sen ohjelma ei ole SD-kortilla.",
+		"error.cia_twice": "Tiedosto .cia ”%1” on projektissa kahdesti tai on myös peli.",
+		"error.cia_unreadable": "sitä ei voi lukea",
 		"error.encrypted": "Peli on salattu. Azahar ajaa vain puretut kopiot (.3ds-, .cci- tai .cxi-tiedostot purettuina, tai .3dsx-kotitekoiset ohjelmat).",
 		"error.gba_title": "Tämä on GBA Virtual Console -nimike, eikä Azahar aja niitä.",
 		"error.no_file": "Ei peliä: projekti ei nimeä sitä, tai '%1' ei ole olemassa.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Sisäistä resoluutiota %1 ei ole.",
 		"error.no_system_archive": "3DS-järjestelmäarkisto puuttuu: %1",
 		"error.not_booted": "Azahar ei voinut käynnistää peliä (tila %1): %2",
-		"error.not_format": "Pelitiedosto ei ole muoto, jonka Azahar lukee (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Pelitiedosto ei ole muoto, jonka Azahar lukee (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Peliä '%1' ei voi avata.",
 		"error.save_empty": "Tallennetut tiedot '%1' eivät sisällä tiedostoja.",
 		"error.save_not_sd": "Tallennetut tiedot sisältävät '%1', joka ei ole SD-kortin tiedosto: jokainen merkintä on muotoa sdmc/..., niin kuin Export Save Data ne kirjoittaa.",
@@ -66,7 +74,9 @@
 		"setting.username": "Käyttäjänimi",
 		"setting.username.about": "Käyttäjänimi konsolin omissa asetuksissa, yhdestä kymmeneen merkkiin. Pelit lukevat sen, esimerkiksi tallennustiedoston omistajana tai tervehdyksessä. Se kuuluu koneeseen, joten elokuva, joka tehtiin yhdellä nimellä, tarvitsee sen nimen. Tyhjänä se on Azahar-emulaattorin oletus AZAHAR.",
 		"slot.game": "Peli",
-		"slot.game.help": "PURETTU kopio. Se voi olla kasetti (.3ds tai .cci), suoritettava (.cxi tai .app) tai kotitekoinen ohjelma (.3dsx tai .elf). Azahar ei pura. Salattu kopio hylätään viestillä, joka sen kertoo. Vanha kopio, joka on purettu mutta jonka otsikossa lukee yhä 'encrypted', tunnistetaan ja ajetaan.",
+		"slot.game.help": "PURETTU kopio. Se voi olla kasetti (.3ds tai .cci), suoritettava (.cxi tai .app) tai kotitekoinen ohjelma (.3dsx tai .elf). Azahar ei pura. Salattu kopio hylätään viestillä, joka sen kertoo. Vanha kopio, joka on purettu mutta jonka otsikossa lukee yhä 'encrypted', tunnistetaan ja ajetaan. Myös salaamaton .cia kelpaa: konsoli asentaa sen SD-kortilleen käynnistyessään.",
+		"slot.install": "Lisää asennettavia tiedostoja",
+		"slot.install.help": "Salaamattomia .cia-tiedostoja, jotka konsoli asentaa SD-kortilleen käynnistyessään pelin jälkeen: ladattavaa sisältöä ja päivityksiä tässä järjestyksessä. Ne asennetaan uudelleen jokaisella käynnistyksellä, joten Vie tallennustiedot ei sisällä niitä.",
 		"slot.savedata": "Tallennetut tiedot",
 		"slot.savedata.help": "Mitä peli on jo tallentanut, niin kuin Emulator > Export Save Data... sen kirjoitti. Se on zip-tiedosto SD-kortin kansiosta 'Nintendo 3DS' (pelin tallennustiedot ja lisätiedot). Se palautetaan koneen SD-kortille ennen pelin alkua."
 	}

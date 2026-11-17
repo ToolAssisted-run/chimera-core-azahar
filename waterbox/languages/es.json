@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "El nombre de usuario no es uno que la consola pueda guardar: debe tener de uno a diez caracteres.",
+		"error.cia_aborted": "la instalación se detuvo a medias",
+		"error.cia_encrypted": "su contenido está cifrado, y Azahar solo instala archivos .cia descifrados",
+		"error.cia_install": "No se pudo instalar el archivo .cia «%1»: %2.",
+		"error.cia_invalid": "no es un archivo .cia que Azahar pueda leer",
+		"error.cia_not_game": "«%1» no es un juego: es contenido descargable, una actualización o un título del sistema. Póngalo en «Más archivos instalables» y un juego en «Juego».",
+		"error.cia_not_installed": "«%1» se instaló, pero su programa no está en la tarjeta SD.",
+		"error.cia_twice": "El archivo .cia «%1» está dos veces en el proyecto, o además es el juego.",
+		"error.cia_unreadable": "no se puede leer",
 		"error.encrypted": "El juego está cifrado. Azahar solo ejecuta volcados descifrados (.3ds, .cci o .cxi descifrados, o homebrew .3dsx).",
 		"error.gba_title": "Este es un título de la Consola Virtual de GBA, y Azahar no ejecuta esos.",
 		"error.no_file": "No hay juego: el proyecto no indica ninguno, o '%1' no está.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "No existe la resolución interna %1.",
 		"error.no_system_archive": "Falta un archivo de sistema de 3DS: %1",
 		"error.not_booted": "Azahar no pudo arrancar el juego (estado %1): %2",
-		"error.not_format": "El archivo del juego no es un formato que lea Azahar (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "El archivo del juego no es un formato que lea Azahar (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "No se puede abrir el juego '%1'.",
 		"error.save_empty": "Los datos guardados '%1' no contienen archivos.",
 		"error.save_not_sd": "Los datos guardados contienen '%1', que no es de la tarjeta SD: cada entrada es sdmc/..., como las escribe Exportar datos guardados.",
@@ -66,7 +74,9 @@
 		"setting.username": "Nombre de usuario",
 		"setting.username.about": "El nombre de usuario en los ajustes propios de la consola, de uno a diez caracteres. Los juegos lo leen, por ejemplo como dueño de un archivo de guardado o en un saludo. Es parte de la máquina, así que una película hecha con un nombre necesita ese nombre. Si se deja vacío, es el predeterminado de Azahar, AZAHAR.",
 		"slot.game": "Juego",
-		"slot.game.help": "Un volcado DESCIFRADO. Puede ser un cartucho (.3ds o .cci), un ejecutable (.cxi o .app) o software casero (.3dsx o .elf). Azahar no descifra. Un volcado cifrado se rechaza con un mensaje que lo dice. Un volcado antiguo que fue descifrado, pero cuya cabecera todavía dice 'encrypted', se reconoce y se ejecuta.",
+		"slot.game.help": "Un volcado DESCIFRADO. Puede ser un cartucho (.3ds o .cci), un ejecutable (.cxi o .app) o software casero (.3dsx o .elf). Azahar no descifra. Un volcado cifrado se rechaza con un mensaje que lo dice. Un volcado antiguo que fue descifrado, pero cuya cabecera todavía dice 'encrypted', se reconoce y se ejecuta. También se acepta un .cia descifrado: la consola lo instala en su tarjeta SD al arrancar.",
+		"slot.install": "Más archivos instalables",
+		"slot.install.help": "Archivos .cia descifrados que la consola instala en su tarjeta SD al arrancar, después del juego: contenido descargable y actualizaciones, en este orden. Se instalan de nuevo en cada arranque, así que Exportar datos guardados no los incluye.",
 		"slot.savedata": "Datos de guardado",
 		"slot.savedata.help": "Lo que el juego ya guardó, tal como lo escribió Emulador > Exportar datos de guardado... Es un .zip de la carpeta 'Nintendo 3DS' de la tarjeta SD (los datos de guardado del juego y sus datos extra). Se vuelve a poner en la tarjeta SD de la máquina antes de que empiece el juego."
 	}

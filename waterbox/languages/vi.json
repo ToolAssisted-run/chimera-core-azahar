@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Tên người dùng không phải thứ máy có thể giữ: phải từ một đến mười ký tự.",
+		"error.cia_aborted": "việc cài đặt dừng giữa chừng",
+		"error.cia_encrypted": "nội dung của nó đã mã hóa, còn Azahar chỉ cài các tệp .cia đã giải mã",
+		"error.cia_install": "Không cài được tệp .cia '%1': %2.",
+		"error.cia_invalid": "đó không phải tệp .cia mà Azahar đọc được",
+		"error.cia_not_game": "'%1' không phải trò chơi: đó là nội dung tải về, bản cập nhật hoặc tựa hệ thống. Hãy đặt nó vào 'Thêm tệp cài đặt', còn trò chơi vào 'Trò chơi'.",
+		"error.cia_not_installed": "'%1' đã được cài, nhưng chương trình của nó không có trên thẻ SD.",
+		"error.cia_twice": "Tệp .cia '%1' có hai lần trong dự án, hoặc đồng thời là trò chơi.",
+		"error.cia_unreadable": "không đọc được",
 		"error.encrypted": "Game bị mã hóa. Azahar chỉ chạy bản dump đã giải mã (.3ds, .cci hoặc .cxi đã giải mã, hoặc homebrew .3dsx).",
 		"error.gba_title": "Đây là một tựa Virtual Console GBA, và Azahar không chạy những tựa đó.",
 		"error.no_file": "Không có game: dự án không nêu game nào, hoặc '%1' không có ở đó.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Không có độ phân giải nội bộ %1.",
 		"error.no_system_archive": "Thiếu một kho hệ thống 3DS: %1",
 		"error.not_booted": "Azahar không khởi động được game (trạng thái %1): %2",
-		"error.not_format": "Tệp game không phải định dạng Azahar đọc được (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Tệp game không phải định dạng Azahar đọc được (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Không mở được game '%1'.",
 		"error.save_empty": "Dữ liệu lưu '%1' không chứa tệp nào.",
 		"error.save_not_sd": "Dữ liệu lưu chứa '%1', không thuộc thẻ SD: mọi mục phải là sdmc/..., như Export Save Data ghi chúng.",
@@ -66,7 +74,9 @@
 		"setting.username": "Tên người dùng",
 		"setting.username.about": "Tên người dùng trong cài đặt của chính máy console, từ một đến mười ký tự. Game đọc nó, ví dụ như chủ của một tệp lưu hoặc trong lời chào. Nó là một phần của máy, nên movie làm với một tên cần đúng tên đó. Để trống thì là mặc định của Azahar, AZAHAR.",
 		"slot.game": "Game",
-		"slot.game.help": "Một bản dump ĐÃ GIẢI MÃ. Có thể là băng (.3ds hoặc .cci), tệp chạy được (.cxi hoặc .app), hoặc homebrew (.3dsx hoặc .elf). Azahar không tự giải mã. Bản dump bị mã hóa bị từ chối kèm thông báo nói vậy. Bản dump cũ đã được giải mã nhưng tiêu đề vẫn ghi 'encrypted' thì được nhận ra và chạy.",
+		"slot.game.help": "Một bản dump ĐÃ GIẢI MÃ. Có thể là băng (.3ds hoặc .cci), tệp chạy được (.cxi hoặc .app), hoặc homebrew (.3dsx hoặc .elf). Azahar không tự giải mã. Bản dump bị mã hóa bị từ chối kèm thông báo nói vậy. Bản dump cũ đã được giải mã nhưng tiêu đề vẫn ghi 'encrypted' thì được nhận ra và chạy. Tệp .cia đã giải mã cũng được nhận: máy cài nó vào thẻ SD của mình khi khởi động.",
+		"slot.install": "Thêm tệp cài đặt",
+		"slot.install.help": "Các tệp .cia đã giải mã mà máy cài vào thẻ SD của nó khi khởi động, sau trò chơi: nội dung tải về và bản cập nhật, theo thứ tự này. Chúng được cài lại mỗi lần khởi động, nên Xuất dữ liệu lưu không chứa chúng.",
 		"slot.savedata": "Dữ liệu lưu",
 		"slot.savedata.help": "Những gì game đã lưu, như Emulator > Export Save Data... đã ghi. Đó là tệp .zip của thư mục 'Nintendo 3DS' trên thẻ SD (dữ liệu lưu của game và dữ liệu phụ). Nó được đặt lại vào thẻ SD của máy trước khi game bắt đầu."
 	}

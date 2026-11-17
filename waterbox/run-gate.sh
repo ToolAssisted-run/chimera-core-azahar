@@ -382,6 +382,93 @@ else
 	report SKIP "drancia: input, touch, save data and settings legs" "no drancia.cci in $roms"
 fi
 
+# ------------------------------------------------ 3c. .cia files are installed
+# A .cia is installed on the machine's SD card when it starts, as Azahar does,
+# and the game starts from there; more .cia files (downloadable content, an
+# update) go in a slot of their own. No .cia of a game is ours to keep, so
+# this leg makes its own from drancia.cci: a decrypted installable of the same
+# program (tests/cia/make-test-cia.py --ncsd), and the content and the update
+# are made up. Retail .cia files carry encrypted content, which Azahar's
+# installer refuses; that refusal is checked with a made-up one too.
+if [ -f "$roms/drancia.cci" ] && [ -x "$native" ]; then
+	mk="$root/tests/cia/make-test-cia.py"
+	c="$work/cia"; rm -rf "$c"; mkdir -p "$c"
+	python3 -I "$mk" "$c/drancia.cia" --ncsd "$roms/drancia.cci" > /dev/null
+	python3 -I "$mk" "$c/dlc.cia" --title-id 0004008C0016E000 > /dev/null
+	python3 -I "$mk" "$c/update.cia" --title-id 0004000E0016E000 --version 2 > /dev/null
+	python3 -I "$mk" "$c/encrypted.cia" --title-id 0004000000123400 --encrypted > /dev/null
+	printf 'not a cia' > "$c/bad.cia"
+	ciadir() { # ciadir <dir> <slots json> <file>...
+		cd_="$1"; cs_="$2"; shift 2
+		rm -rf "$cd_"; mkdir -p "$cd_"
+		for f_ in "$@"; do ln -s "$f_" "$cd_/$(basename "$f_")"; done
+		printf '%s' "$cs_" > "$cd_/slots"
+	}
+	ciadir "$work/cia-game" '{"game":["drancia.cia"]}' "$c/drancia.cia"
+	ciadir "$work/cia-all" '{"game":["drancia.cia"],"install":["dlc.cia","update.cia"]}' "$c/drancia.cia" "$c/dlc.cia" "$c/update.cia"
+	"$native" "$work/cia-game" --frames 760 --report 760 > "$work/cia.n" 2> "$work/cia.ne" &
+	"$native" "$work/cia-all" --frames 300 --report 30 --exercise > "$work/cia-all.n" 2> "$work/cia-all.ne" &
+	"$native" "$work/cia-all" --frames 300 --report 30 --exercise > "$work/cia-all.n2" 2> /dev/null &
+	"$wbxrun" "$core" "$work/cia-all" --frames 300 --report 30 --exercise > "$work/cia-all.w" 2> "$work/cia-all.we" &
+	"$native" "$work/cia-game" --frames 760 --report 760 --savedata-out "$work/cia.sd" > /dev/null 2>&1 &
+	wait
+	idle="$(last "$work/in.idle")"
+	# the game that starts from its .cia is the one that starts from the
+	# .cci: the same picture at frame 760 (the control: the same game a
+	# button press later is another picture, so the digest tells them apart)
+	pic="$(field "$(last "$work/cia.n")" 400x480)"
+	if [ -n "$pic" ] && [ -n "$idle" ] && [ "$pic" = "$(field "$idle" 400x480)" ] \
+		&& [ "$pic" != "$(field "$(last "$work/in.down")" 400x480)" ]; then
+		report PASS "cia: the game starts from its .cia" "the .cci's picture at frame 760"
+	else
+		report FAIL "cia: the game starts from its .cia" "$(tail -1 "$work/cia.ne")"
+	fi
+	if grep -q "installed dlc.cia" "$work/cia-all.ne" && grep -q "installed update.cia" "$work/cia-all.ne" \
+		&& grep -q "installed drancia.cia" "$work/cia-all.ne"; then
+		report PASS "cia: the game, the content and the update are installed" "in the slot's order"
+	else
+		report FAIL "cia: the game, the content and the update are installed" "$(tail -2 "$work/cia-all.ne" | tr '\n' ' ')"
+	fi
+	if alive "$work/cia-all.n" && same "$work/cia-all.n" "$work/cia-all.n2"; then
+		report PASS "cia: installing is deterministic" "two native runs, 300 frames"
+	else
+		report FAIL "cia: installing is deterministic"
+	fi
+	if alive "$work/cia-all.n" && same "$work/cia-all.n" "$work/cia-all.w"; then
+		report PASS "cia: native == sandbox with installs" "300 frames, exercised"
+	else
+		report FAIL "cia: native == sandbox with installs" "first difference: $(diff "$work/cia-all.n" "$work/cia-all.w" 2>&1 | awk 'NR==2' | cut -c1-60)"
+	fi
+	# the installs are not the game's save data: what Export Save Data holds
+	# is what the .cci's run held (the control: the export is not empty, and
+	# the same files, so a leak of the installed .app would add one)
+	n2="$(find "$work/cia.sd" -type f 2>/dev/null | wc -l)"
+	if [ "$n2" -gt 0 ] && [ "$n2" -eq "${n1:-0}" ] && [ -z "$(find "$work/cia.sd" -name '*.app' -o -name '*.tmd')" ]; then
+		report PASS "cia: Export Save Data leaves the installed files out" "$n2 files, as the .cci's run"
+	else
+		report FAIL "cia: Export Save Data leaves the installed files out" "$n2 files, the .cci's run had ${n1:-?}"
+	fi
+	# a refusal says why, and does not boot
+	refuse() { # refuse <name> <slots json> <key> <file>...
+		rn_="$1"; rs_="$2"; rk_="$3"; shift 3
+		ciadir "$work/cia-$rn_" "$rs_" "$@"
+		if "$native" "$work/cia-$rn_" --frames 1 --report 1 > "$work/cia-$rn_.out" 2>&1; then
+			report FAIL "cia: $rn_ is refused" "it booted"
+		elif grep -q "$rk_" "$work/cia-$rn_.out"; then
+			report PASS "cia: $rn_ is refused" "$rk_"
+		else
+			report FAIL "cia: $rn_ is refused" "$(tail -1 "$work/cia-$rn_.out")"
+		fi
+	}
+	refuse notacia '{"game":["bad.cia"]}' "error.cia_install" "$c/bad.cia"
+	refuse encrypted '{"game":["encrypted.cia"]}' "error.cia_install" "$c/encrypted.cia"
+	refuse content-as-game '{"game":["dlc.cia"]}' "error.cia_not_game" "$c/dlc.cia"
+	refuse bad-install '{"game":["drancia.cia"],"install":["bad.cia"]}' "error.cia_install" "$c/drancia.cia" "$c/bad.cia"
+	refuse twice '{"game":["drancia.cia"],"install":["drancia.cia"]}' "error.cia_twice" "$c/drancia.cia"
+else
+	report SKIP "cia: the .cia legs" "no drancia.cci in $roms, or no native build"
+fi
+
 # ------------------------------ 3b. a save-data commit takes the console's time
 # chimera#345: a game that shows a window while it saves can ask the window to
 # close before it has finished opening when the commit answers at once, and

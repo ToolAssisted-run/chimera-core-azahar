@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Kullanıcı adı konsolun tutabileceği bir ad değil: bir ila on karakter olmalı.",
+		"error.cia_aborted": "kurulum yarıda durdu",
+		"error.cia_encrypted": "içeriği şifreli ve Azahar yalnızca şifresi çözülmüş .cia dosyalarını kurar",
+		"error.cia_install": ".cia dosyası '%1' kurulamadı: %2.",
+		"error.cia_invalid": "Azahar'ın okuyabileceği bir .cia dosyası değil",
+		"error.cia_not_game": "'%1' bir oyun değil: indirilebilir içerik, güncelleme veya sistem başlığı. Onu 'Daha fazla kurulabilir dosya' alanına, oyunu 'Oyun' alanına koyun.",
+		"error.cia_not_installed": "'%1' kuruldu, ancak programı SD kartta yok.",
+		"error.cia_twice": ".cia dosyası '%1' projede iki kez var ya da aynı zamanda oyun.",
+		"error.cia_unreadable": "okunamıyor",
 		"error.encrypted": "Oyun şifreli. Azahar yalnızca şifresi çözülmüş dökümleri çalıştırır (.3ds, .cci ya da .cxi şifresi çözülmüş, ya da .3dsx ev yapımı).",
 		"error.gba_title": "Bu bir GBA Virtual Console başlığı ve Azahar bunları çalıştırmaz.",
 		"error.no_file": "Oyun yok: proje bir tane adlandırmıyor ya da '%1' orada değil.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "%1 adında bir iç çözünürlük yok.",
 		"error.no_system_archive": "Bir 3DS sistem arşivi eksik: %1",
 		"error.not_booted": "Azahar oyunu açamadı (durum %1): %2",
-		"error.not_format": "Oyun dosyası Azahar'ın okuduğu bir biçim değil (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Oyun dosyası Azahar'ın okuduğu bir biçim değil (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "'%1' oyunu açılamıyor.",
 		"error.save_empty": "'%1' kayıt verisi hiçbir dosya tutmuyor.",
 		"error.save_not_sd": "Kayıt verisi '%1' tutuyor; bu SD kartın değil: her girdi, Export Save Data'nın yazdığı gibi sdmc/... biçiminde.",
@@ -66,7 +74,9 @@
 		"setting.username": "Kullanıcı adı",
 		"setting.username.about": "Konsolun kendi ayarlarındaki kullanıcı adı, bir ila on karakter. Oyunlar bunu okur; örneğin bir kayıt dosyasının sahibi olarak ya da bir selamlamada. Makinenin bir parçasıdır, bu yüzden bir adla yapılmış bir kayıt o adı ister. Boş bırakılırsa Azahar'ın varsayılanı olan AZAHAR olur.",
 		"slot.game": "Oyun",
-		"slot.game.help": "ŞİFRESİ ÇÖZÜLMÜŞ bir döküm. Bir kartuş (.3ds ya da .cci), bir çalıştırılabilir (.cxi ya da .app) ya da ev yapımı (.3dsx ya da .elf) olabilir. Azahar şifre çözmez. Şifreli bir döküm, bunu söyleyen bir mesajla reddedilir. Şifresi çözülmüş ama başlığı hâlâ 'encrypted' yazan eski bir döküm tanınır ve çalışır.",
+		"slot.game.help": "ŞİFRESİ ÇÖZÜLMÜŞ bir döküm. Bir kartuş (.3ds ya da .cci), bir çalıştırılabilir (.cxi ya da .app) ya da ev yapımı (.3dsx ya da .elf) olabilir. Azahar şifre çözmez. Şifreli bir döküm, bunu söyleyen bir mesajla reddedilir. Şifresi çözülmüş ama başlığı hâlâ 'encrypted' yazan eski bir döküm tanınır ve çalışır. Şifresi çözülmüş bir .cia da kabul edilir: konsol onu açılışta SD kartına kurar.",
+		"slot.install": "Daha fazla kurulabilir dosya",
+		"slot.install.help": "Konsolun açılışta, oyundan sonra SD kartına kurduğu şifresi çözülmüş .cia dosyaları: indirilebilir içerik ve güncellemeler, bu sırayla. Her açılışta yeniden kurulurlar, bu yüzden Kayıt Verilerini Dışa Aktar bunları içermez.",
 		"slot.savedata": "Kayıt verisi",
 		"slot.savedata.help": "Oyunun zaten kaydettiği şey, Emulator > Export Save Data... menüsünün yazdığı biçimde. Bu, SD kartın 'Nintendo 3DS' klasörünün (oyunun kayıt verisi ve ek verisi) bir .zip dosyasıdır. Oyun başlamadan önce makinenin SD kartına geri konur."
 	}

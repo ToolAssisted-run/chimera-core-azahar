@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Nama pengguna bukan nama yang bisa ditampung konsol: harus terdiri dari satu sampai sepuluh karakter.",
+		"error.cia_aborted": "instalasi berhenti di tengah jalan",
+		"error.cia_encrypted": "isinya terenkripsi, dan Azahar hanya memasang berkas .cia yang sudah didekripsi",
+		"error.cia_install": "Berkas .cia '%1' tidak dapat dipasang: %2.",
+		"error.cia_invalid": "itu bukan berkas .cia yang dapat dibaca Azahar",
+		"error.cia_not_game": "'%1' bukan game: itu konten yang dapat diunduh, pembaruan, atau judul sistem. Taruh di 'Berkas lain yang dapat dipasang', dan game di 'Game'.",
+		"error.cia_not_installed": "'%1' sudah dipasang, tetapi programnya tidak ada di kartu SD.",
+		"error.cia_twice": "Berkas .cia '%1' ada dua kali di proyek, atau juga merupakan game-nya.",
+		"error.cia_unreadable": "tidak dapat dibaca",
 		"error.encrypted": "Game ini terenkripsi. Azahar hanya menjalankan salinan yang sudah didekripsi (.3ds, .cci, atau .cxi yang sudah didekripsi, atau homebrew .3dsx).",
 		"error.gba_title": "Ini adalah judul GBA Virtual Console, dan Azahar tidak menjalankannya.",
 		"error.no_file": "Tidak ada game: proyek tidak menyebut apa pun, atau '%1' tidak ada.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Tidak ada resolusi internal %1.",
 		"error.no_system_archive": "Arsip sistem 3DS hilang: %1",
 		"error.not_booted": "Azahar tidak dapat menyalakan game (status %1): %2",
-		"error.not_format": "Berkas game bukan format yang dibaca Azahar (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Berkas game bukan format yang dibaca Azahar (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Game '%1' tidak dapat dibuka.",
 		"error.save_empty": "Data simpanan '%1' tidak memuat berkas apa pun.",
 		"error.save_not_sd": "Data simpanan memuat '%1', yang bukan milik kartu SD: setiap entri adalah sdmc/..., seperti yang ditulis Export Save Data.",
@@ -66,7 +74,9 @@
 		"setting.username": "Nama Pengguna",
 		"setting.username.about": "Nama pengguna di pengaturan konsol itu sendiri, satu sampai sepuluh karakter. Game membacanya, misalnya sebagai pemilik berkas simpanan atau dalam sapaan. Ini bagian dari mesin, jadi movie yang dibuat dengan satu nama membutuhkan nama itu. Jika dikosongkan, nilainya adalah default Azahar, AZAHAR.",
 		"slot.game": "Game",
-		"slot.game.help": "Salinan yang sudah DIDEKRIPSI. Bisa berupa kartrid (.3ds atau .cci), program (.cxi atau .app), atau homebrew (.3dsx atau .elf). Azahar tidak mendekripsi. Salinan yang terenkripsi ditolak dengan pesan yang menyatakannya. Salinan lama yang sudah didekripsi tetapi headernya masih bertuliskan 'encrypted' dikenali dan dapat berjalan.",
+		"slot.game.help": "Salinan yang sudah DIDEKRIPSI. Bisa berupa kartrid (.3ds atau .cci), program (.cxi atau .app), atau homebrew (.3dsx atau .elf). Azahar tidak mendekripsi. Salinan yang terenkripsi ditolak dengan pesan yang menyatakannya. Salinan lama yang sudah didekripsi tetapi headernya masih bertuliskan 'encrypted' dikenali dan dapat berjalan. Sebuah .cia yang sudah didekripsi juga diterima: konsol memasangnya ke kartu SD-nya saat mulai.",
+		"slot.install": "Berkas lain yang dapat dipasang",
+		"slot.install.help": "Berkas .cia yang sudah didekripsi, yang dipasang konsol ke kartu SD-nya saat mulai, setelah game: konten yang dapat diunduh dan pembaruan, dalam urutan ini. Dipasang ulang pada setiap awal, jadi Ekspor Data Simpan tidak memuatnya.",
 		"slot.savedata": "Data simpanan",
 		"slot.savedata.help": "Apa yang sudah disimpan game, seperti yang ditulis Emulator > Export Save Data... Ini adalah .zip dari folder 'Nintendo 3DS' pada kartu SD (data simpanan game dan data tambahannya). Data ini dikembalikan ke kartu SD mesin sebelum game dimulai."
 	}

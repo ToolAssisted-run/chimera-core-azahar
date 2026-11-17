@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Nazwa użytkownika nie jest taka, jaką konsola może przechować: musi mieć od jednego do dziesięciu znaków.",
+		"error.cia_aborted": "instalacja zatrzymała się w połowie",
+		"error.cia_encrypted": "jego zawartość jest zaszyfrowana, a Azahar instaluje tylko odszyfrowane pliki .cia",
+		"error.cia_install": "Nie udało się zainstalować pliku .cia „%1”: %2.",
+		"error.cia_invalid": "to nie jest plik .cia, który Azahar umie odczytać",
+		"error.cia_not_game": "„%1” nie jest grą: to zawartość do pobrania, aktualizacja albo tytuł systemowy. Umieść go w „Więcej plików do instalacji”, a grę w „Gra”.",
+		"error.cia_not_installed": "„%1” zainstalowano, ale jego programu nie ma na karcie SD.",
+		"error.cia_twice": "Plik .cia „%1” jest w projekcie dwa razy albo jest też grą.",
+		"error.cia_unreadable": "nie można go odczytać",
 		"error.encrypted": "Gra jest zaszyfrowana. Azahar uruchamia tylko odszyfrowane zrzuty (.3ds, .cci lub .cxi odszyfrowane, albo homebrew .3dsx).",
 		"error.gba_title": "To tytuł Wirtualnej Konsoli GBA, a Azahar takich nie uruchamia.",
 		"error.no_file": "Brak gry: projekt jej nie podaje albo „%1” nie istnieje.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Nie ma wewnętrznej rozdzielczości %1.",
 		"error.no_system_archive": "Brakuje archiwum systemowego 3DS: %1",
 		"error.not_booted": "Azahar nie mógł uruchomić gry (status %1): %2",
-		"error.not_format": "Plik gry nie jest formatem, który czyta Azahar (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Plik gry nie jest formatem, który czyta Azahar (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Nie można otworzyć gry „%1”.",
 		"error.save_empty": "Zapis gry „%1” nie zawiera żadnych plików.",
 		"error.save_not_sd": "Zapis gry zawiera „%1”, który nie należy do karty SD: każdy wpis to sdmc/..., tak jak zapisuje je Eksportuj zapis gry.",
@@ -66,7 +74,9 @@
 		"setting.username": "Nazwa użytkownika",
 		"setting.username.about": "Nazwa użytkownika w ustawieniach samej konsoli, od jednego do dziesięciu znaków. Gry ją odczytują, na przykład jako właściciela pliku zapisu albo w powitaniu. To część maszyny, więc nagranie zrobione z jedną nazwą potrzebuje tej nazwy. Pozostawione puste, jest to domyślna nazwa Azahar, AZAHAR.",
 		"slot.game": "Gra",
-		"slot.game.help": "ODSZYFROWANY zrzut. Może to być kaseta (.3ds lub .cci), plik wykonywalny (.cxi lub .app) albo homebrew (.3dsx lub .elf). Azahar nie odszyfrowuje. Zaszyfrowany zrzut zostaje odrzucony z komunikatem, który to mówi. Stary zrzut, który został odszyfrowany, ale jego nagłówek nadal mówi „encrypted”, jest rozpoznawany i działa.",
+		"slot.game.help": "ODSZYFROWANY zrzut. Może to być kaseta (.3ds lub .cci), plik wykonywalny (.cxi lub .app) albo homebrew (.3dsx lub .elf). Azahar nie odszyfrowuje. Zaszyfrowany zrzut zostaje odrzucony z komunikatem, który to mówi. Stary zrzut, który został odszyfrowany, ale jego nagłówek nadal mówi „encrypted”, jest rozpoznawany i działa. Odszyfrowany plik .cia też jest przyjmowany: konsola instaluje go na swojej karcie SD przy starcie.",
+		"slot.install": "Więcej plików do instalacji",
+		"slot.install.help": "Odszyfrowane pliki .cia, które konsola instaluje na swojej karcie SD przy starcie, po grze: zawartość do pobrania i aktualizacje, w tej kolejności. Są instalowane od nowa przy każdym starcie, więc Eksport danych zapisu ich nie zawiera.",
 		"slot.savedata": "Zapis gry",
 		"slot.savedata.help": "To, co gra już zapisała, tak jak zapisał to Emulator > Eksportuj zapis gry... Jest to plik .zip folderu „Nintendo 3DS” z karty SD (dane zapisu gry i dodatkowe dane). Zostaje wstawiony z powrotem na kartę SD maszyny, zanim gra wystartuje."
 	}

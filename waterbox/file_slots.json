@@ -12,9 +12,20 @@
         "cxi",
         "app",
         "3dsx",
-        "elf"
+        "elf",
+        "cia"
       ],
       "help": "slot.game.help"
+    },
+    {
+      "id": "install",
+      "title": "slot.install",
+      "min": 0,
+      "max": 32,
+      "formats": [
+        "cia"
+      ],
+      "help": "slot.install.help"
     },
     {
       "id": "savedata",

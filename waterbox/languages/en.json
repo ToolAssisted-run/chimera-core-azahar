@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "The user name is not one the console can hold: it has to be one to ten characters.",
+		"error.cia_aborted": "the installation stopped part way",
+		"error.cia_encrypted": "its content is encrypted, and Azahar installs decrypted .cia files only",
+		"error.cia_install": "The .cia file '%1' could not be installed: %2.",
+		"error.cia_invalid": "it is not a .cia file Azahar can read",
+		"error.cia_not_game": "'%1' is not a game: it is downloadable content, an update or a system title. Put it in 'More installable files', and a game in 'Game'.",
+		"error.cia_not_installed": "'%1' was installed, but its program is not on the SD card.",
+		"error.cia_twice": "The .cia file '%1' is in the project twice, or is the game as well.",
+		"error.cia_unreadable": "it cannot be read",
 		"error.encrypted": "The game is encrypted. Azahar runs decrypted dumps only (.3ds, .cci or .cxi decrypted, or .3dsx homebrew).",
 		"error.gba_title": "This is a GBA Virtual Console title, and Azahar does not run those.",
 		"error.no_file": "No game: the project names none, or '%1' is not there.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "There is no internal resolution %1.",
 		"error.no_system_archive": "A 3DS system archive is missing: %1",
 		"error.not_booted": "Azahar could not boot the game (status %1): %2",
-		"error.not_format": "The game file is not a format Azahar reads (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "The game file is not a format Azahar reads (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "The game '%1' cannot be opened.",
 		"error.save_empty": "The save data '%1' holds no files.",
 		"error.save_not_sd": "The save data holds '%1', which is not the SD card's: every entry is sdmc/..., as Export Save Data writes them.",
@@ -66,7 +74,9 @@
 		"setting.username": "User Name",
 		"setting.username.about": "The user name in the console's own settings, one to ten characters. Games read it, for example as the owner of a save file or in a greeting. It is part of the machine, so a movie made with one name needs that name. Left empty, it is Azahar's default, AZAHAR.",
 		"slot.game": "Game",
-		"slot.game.help": "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an executable (.cxi or .app) or homebrew (.3dsx or .elf). Azahar does not decrypt. An encrypted dump is refused with a message that says so. An old dump that was decrypted but whose header still says 'encrypted' is recognised and runs.",
+		"slot.game.help": "A DECRYPTED dump. It can be a cartridge (.3ds or .cci), an executable (.cxi or .app) or homebrew (.3dsx or .elf). Azahar does not decrypt. An encrypted dump is refused with a message that says so. An old dump that was decrypted but whose header still says 'encrypted' is recognised and runs. A decrypted .cia is also accepted: the console installs it on its SD card when it starts.",
+		"slot.install": "More installable files",
+		"slot.install.help": "Decrypted .cia files the console installs on its SD card when it starts, after the game: downloadable content and updates, in this order. They are installed afresh at every start, so Export Save Data does not hold them.",
 		"slot.savedata": "Save data",
 		"slot.savedata.help": "What the game already saved, as Emulator > Export Save Data... wrote it. It is a .zip of the SD card's 'Nintendo 3DS' folder (the game's save data and extra data). It is put back onto the machine's SD card before the game starts."
 	}

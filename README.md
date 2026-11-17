@@ -19,13 +19,23 @@ frame in which the game never read its controls.
 ## What a project needs
 
 - **A decrypted game**: a cartridge dump (`.3ds`/`.cci`), an executable
-  content (`.cxi`/`.app`) or homebrew (`.3dsx`/`.elf`). Azahar does not
-  decrypt; an encrypted dump is a load error that says so. An old dump whose
-  header still says "encrypted" after it was decrypted is recognised and runs.
+  content (`.cxi`/`.app`), homebrew (`.3dsx`/`.elf`) or a decrypted
+  installable (`.cia`). Azahar does not decrypt; an encrypted dump is a load
+  error that says so. An old dump whose header still says "encrypted" after
+  it was decrypted is recognised and runs.
+- **A `.cia` is installed when the machine starts**, on the console's SD card
+  in the machine's own memory, as Azahar installs one, and the game starts
+  from there. The project's **More installable files** slot takes more
+  decrypted `.cia` files (downloadable content, updates), installed after the
+  game in the slot's order. Every file is hash-bound like the game, the
+  install is the same at every start, and Export Save Data does not hold the
+  installed files, only what the game saved. Azahar's installer refuses a
+  `.cia` whose content is still encrypted (most eShop dumps), with a message
+  that says so.
 - Nothing else for a decrypted game. **The package carries no key, no system
-  file and no game.** A project that needs the console's keys (`.cia`
-  content, amiibo) brings its own `aes_keys.txt` as firmware, and
-  `seeddb.bin` for seeded eShop titles.
+  file and no game.** A project that needs the console's keys (amiibo)
+  brings its own `aes_keys.txt` as firmware, and `seeddb.bin` for seeded
+  eShop titles.
 
 ## Settings
 

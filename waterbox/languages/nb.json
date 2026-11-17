@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "Brukernavnet er ikke et konsollen kan holde: det må være mellom én og ti tegn.",
+		"error.cia_aborted": "installasjonen stoppet halvveis",
+		"error.cia_encrypted": "innholdet er kryptert, og Azahar installerer bare dekrypterte .cia-filer",
+		"error.cia_install": ".cia-filen «%1» kunne ikke installeres: %2.",
+		"error.cia_invalid": "det er ikke en .cia-fil Azahar kan lese",
+		"error.cia_not_game": "«%1» er ikke et spill: det er nedlastbart innhold, en oppdatering eller en systemtittel. Legg den i «Flere installerbare filer», og et spill i «Spill».",
+		"error.cia_not_installed": "«%1» ble installert, men programmet finnes ikke på SD-kortet.",
+		"error.cia_twice": ".cia-filen «%1» er med to ganger i prosjektet, eller er også spillet.",
+		"error.cia_unreadable": "den kan ikke leses",
 		"error.encrypted": "Spillet er kryptert. Azahar kjører bare dekrypterte kopier (.3ds, .cci eller .cxi dekryptert, eller .3dsx-hjemmelaget).",
 		"error.gba_title": "Dette er en GBA Virtual Console-tittel, og Azahar kjører ikke dem.",
 		"error.no_file": "Ingen spill: prosjektet nevner ingen, eller «%1» finnes ikke.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "Det finnes ingen intern oppløsning %1.",
 		"error.no_system_archive": "Et 3DS-systemarkiv mangler: %1",
 		"error.not_booted": "Azahar kunne ikke starte spillet (status %1): %2",
-		"error.not_format": "Spillfilen er ikke et format Azahar leser (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "Spillfilen er ikke et format Azahar leser (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "Spillet «%1» kan ikke åpnes.",
 		"error.save_empty": "De lagrede dataene «%1» har ingen filer.",
 		"error.save_not_sd": "De lagrede dataene har «%1», som ikke er SD-kortets: hvert innslag skal være sdmc/..., slik Eksporter lagrede data skriver dem.",
@@ -66,7 +74,9 @@
 		"setting.username": "Brukernavn",
 		"setting.username.about": "Brukernavnet i konsollens egne innstillinger, mellom ett og ti tegn. Spill leser det, for eksempel som eieren av en lagringsfil eller i en hilsen. Det er en del av maskinen, så et opptak laget med ett navn trenger det navnet. Når det er tomt, brukes standarden i Azahar, AZAHAR.",
 		"slot.game": "Spill",
-		"slot.game.help": "En DEKRYPTERT kopi. Det kan være en kassett (.3ds eller .cci), en kjørbar fil (.cxi eller .app) eller hjemmelaget (.3dsx eller .elf). Azahar dekrypterer ikke. En kryptert kopi avvises med en melding som sier det. En gammel kopi som er dekryptert, men der headeren fortsatt sier «encrypted», gjenkjennes og kjører.",
+		"slot.game.help": "En DEKRYPTERT kopi. Det kan være en kassett (.3ds eller .cci), en kjørbar fil (.cxi eller .app) eller hjemmelaget (.3dsx eller .elf). Azahar dekrypterer ikke. En kryptert kopi avvises med en melding som sier det. En gammel kopi som er dekryptert, men der headeren fortsatt sier «encrypted», gjenkjennes og kjører. En dekryptert .cia godtas også: konsollen installerer den på SD-kortet sitt ved start.",
+		"slot.install": "Flere installerbare filer",
+		"slot.install.help": "Dekrypterte .cia-filer som konsollen installerer på SD-kortet sitt ved start, etter spillet: nedlastbart innhold og oppdateringer, i denne rekkefølgen. De installeres på nytt ved hver start, så Eksporter lagringsdata inneholder dem ikke.",
 		"slot.savedata": "Lagrede data",
 		"slot.savedata.help": "Det spillet allerede har lagret, slik Emulator > Eksporter lagrede data... skrev det. Det er en .zip av SD-kortets mappe «Nintendo 3DS» (spillets lagrede data og tilleggsdata). Det legges tilbake på maskinens SD-kort før spillet starter."
 	}

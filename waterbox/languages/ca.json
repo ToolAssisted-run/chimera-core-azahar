@@ -1,6 +1,14 @@
 {
 	"texts": {
 		"error.bad_user_name": "El nom d'usuari no és un que la consola pugui guardar: n'ha de tenir d'un a deu caràcters.",
+		"error.cia_aborted": "la instal·lació s'ha aturat a mig camí",
+		"error.cia_encrypted": "el contingut està xifrat, i Azahar només instal·la fitxers .cia desxifrats",
+		"error.cia_install": "No s'ha pogut instal·lar el fitxer .cia '%1': %2.",
+		"error.cia_invalid": "no és un fitxer .cia que Azahar pugui llegir",
+		"error.cia_not_game": "'%1' no és un joc: és contingut descarregable, una actualització o un títol del sistema. Poseu-lo a «Més fitxers instal·lables», i un joc a «Joc».",
+		"error.cia_not_installed": "'%1' s'ha instal·lat, però el seu programa no és a la targeta SD.",
+		"error.cia_twice": "El fitxer .cia '%1' és dues vegades al projecte, o també és el joc.",
+		"error.cia_unreadable": "no es pot llegir",
 		"error.encrypted": "El joc està xifrat. Azahar només executa volcats desxifrats (.3ds, .cci o .cxi desxifrats, o programes casolans .3dsx).",
 		"error.gba_title": "Això és un títol de la Consola Virtual GBA, i Azahar no els executa.",
 		"error.no_file": "No hi ha cap joc: el projecte no n'indica cap, o '%1' no hi és.",
@@ -10,7 +18,7 @@
 		"error.no_resolution": "No hi ha cap resolució interna %1.",
 		"error.no_system_archive": "Falta un arxiu del sistema del 3DS: %1",
 		"error.not_booted": "Azahar no ha pogut arrencar el joc (estat %1): %2",
-		"error.not_format": "El fitxer del joc no és un format que llegeixi Azahar (.3ds .cci .cxi .app .3dsx .elf).",
+		"error.not_format": "El fitxer del joc no és un format que llegeixi Azahar (.3ds .cci .cxi .app .3dsx .elf .cia).",
 		"error.not_opened": "No es pot obrir el joc '%1'.",
 		"error.save_empty": "Les dades desades '%1' no tenen cap fitxer.",
 		"error.save_not_sd": "Les dades desades tenen '%1', que no és de la targeta SD: cada entrada és sdmc/..., tal com les escriu Exporta les dades desades.",
@@ -66,7 +74,9 @@
 		"setting.username": "Nom d'usuari",
 		"setting.username.about": "El nom d'usuari a la configuració pròpia de la consola, d'un a deu caràcters. Els jocs el llegeixen, per exemple com a propietari d'un fitxer de desat o en una salutació. Forma part de la màquina, de manera que un moviment fet amb un nom necessita aquest nom. Si es deixa buit, és el valor per defecte d'Azahar, AZAHAR.",
 		"slot.game": "Joc",
-		"slot.game.help": "Un volcat DESXIFRAT. Pot ser un cartutx (.3ds o .cci), un executable (.cxi o .app) o un programa casolà (.3dsx o .elf). Azahar no desxifra. Un volcat xifrat es rebutja amb un missatge que ho diu. Un volcat antic que s'ha desxifrat però que a la capçalera encara diu 'encrypted' es reconeix i s'executa.",
+		"slot.game.help": "Un volcat DESXIFRAT. Pot ser un cartutx (.3ds o .cci), un executable (.cxi o .app) o un programa casolà (.3dsx o .elf). Azahar no desxifra. Un volcat xifrat es rebutja amb un missatge que ho diu. Un volcat antic que s'ha desxifrat però que a la capçalera encara diu 'encrypted' es reconeix i s'executa. També s'accepta un .cia desxifrat: la consola l'instal·la a la targeta SD en arrencar.",
+		"slot.install": "Més fitxers instal·lables",
+		"slot.install.help": "Fitxers .cia desxifrats que la consola instal·la a la targeta SD en arrencar, després del joc: contingut descarregable i actualitzacions, en aquest ordre. S'instal·len de nou a cada arrencada, així que Exporta les dades desades no els inclou.",
 		"slot.savedata": "Dades desades",
 		"slot.savedata.help": "Allò que el joc ja havia desat, tal com ho va escriure Emulador > Exporta les dades desades... És un zip de la carpeta 'Nintendo 3DS' de la targeta SD (les dades desades del joc i les dades extra). Es torna a posar a la targeta SD de la màquina abans que comenci el joc."
 	}
