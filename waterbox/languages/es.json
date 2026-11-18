@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Base de datos de semillas (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Las semillas con las que están cifrados algunos juegos de la eShop.",
 		"setting.aes_keys": "Claves AES",
-		"setting.aes_keys.about": "Si el proyecto incluye las claves AES de la consola (aes_keys.txt, volcadas desde su propia consola). Un juego descifrado no necesita ninguna, y este paquete no incluye ninguna. Se necesitan para instalar y ejecutar contenido .cia, para los amiibo y para algunas funciones de cuenta en línea.",
+		"setting.aes_keys.about": "Si el proyecto incluye las claves AES de la consola (aes_keys.txt, extraídas de su propia consola). Un juego descifrado no necesita ninguna, y este paquete no incluye ninguna. Hacen falta para los amiibo y para algunas funciones de cuenta en línea.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Cómo se emula el procesador ARM11 de la consola: con el recompilador de dynarmic, que es rápido, o con el intérprete de Azahar. Ambos deben dar el mismo resultado. El intérprete está para averiguar si un problema viene del recompilador o del juego.",
 		"setting.cpu_clock": "Velocidad de CPU (%)",

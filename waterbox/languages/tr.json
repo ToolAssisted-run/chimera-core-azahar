@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Tohum veritabanı (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Bazı eShop oyunlarının şifrelendiği tohumlar.",
 		"setting.aes_keys": "AES anahtarları",
-		"setting.aes_keys.about": "Projenin konsolun AES anahtarlarını (aes_keys.txt, kendi konsolunuzdan dökülmüş) içerip içermediği. Şifresi çözülmüş bir oyun hiçbirine ihtiyaç duymaz ve bu paket hiçbirini içermez. .cia içeriğini kurmak ve çalıştırmak, amiibo için ve bazı çevrimiçi hesap özellikleri için gerekirler.",
+		"setting.aes_keys.about": "Projenin konsolun AES anahtarlarını (aes_keys.txt, kendi konsolunuzdan alınmış) içerip içermediği. Şifresi çözülmüş bir oyun bunlara ihtiyaç duymaz ve bu paket hiçbirini içermez. amiibo için ve bazı çevrimiçi hesap özellikleri için gereklidir.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Konsolun ARM11 işlemcisinin nasıl öykünüldüğü: hızlı olan dynarmic'in yeniden derleyicisiyle ya da Azahar'ın yorumlayıcısıyla. İkisinin de aynı sonucu vermesi amaçlanır. Yorumlayıcı, bir sorunun yeniden derleyiciden mi yoksa oyundan mı geldiğini anlamak için oradadır.",
 		"setting.cpu_clock": "CPU saati (%)",

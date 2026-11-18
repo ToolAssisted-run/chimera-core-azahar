@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "시드 데이터베이스(seeddb.bin)",
 		"firmware.seeddb_bin.about": "일부 eShop 게임이 암호화되어 있는 시드입니다.",
 		"setting.aes_keys": "AES 키",
-		"setting.aes_keys.about": "프로젝트에 본체의 AES 키(aes_keys.txt, 여러분의 본체에서 추출)를 넣을지 여부입니다. 복호화된 게임에는 필요 없으며, 이 패키지에는 키가 들어 있지 않습니다. .cia 콘텐츠를 설치하고 실행하거나, amiibo나 일부 온라인 계정 기능에 필요합니다.",
+		"setting.aes_keys.about": "프로젝트에 본체의 AES 키(aes_keys.txt, 여러분의 본체에서 추출)를 넣을지 여부입니다. 복호화된 게임에는 필요 없으며, 이 패키지에는 키가 들어 있지 않습니다. amiibo와 일부 온라인 계정 기능에 필요합니다.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "본체의 ARM11 프로세서를 에뮬레이트하는 방식입니다. 빠른 dynarmic 재컴파일러를 쓰거나, Azahar의 인터프리터를 씁니다. 둘은 같은 결과를 내도록 되어 있습니다. 인터프리터는 문제가 재컴파일러에서 오는지 게임에서 오는지 알아내려고 있습니다.",
 		"setting.cpu_clock": "CPU 클록(%)",

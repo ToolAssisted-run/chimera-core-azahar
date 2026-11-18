@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Kulcsadatbázis (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Azok a kulcsok, amelyekkel néhány eShop-játék titkosítva van.",
 		"setting.aes_keys": "AES-kulcsok",
-		"setting.aes_keys.about": "Hogy a projekt tartalmazza-e a konzol AES-kulcsait (aes_keys.txt, a saját konzolodról kiolvasva). Egy visszafejtett játéknak nincs szüksége rájuk, és ez a csomag sem tartalmaz egyet sem. A .cia-tartalom telepítéséhez és futtatásához, az amiibóhoz és néhány online-fiókfunkcióhoz kellenek.",
+		"setting.aes_keys.about": "Tartalmazza-e a projekt a konzol AES-kulcsait (aes_keys.txt, a saját konzoljáról kinyerve). Egy visszafejtett játéknak nincs rájuk szüksége, és ez a csomag sem tartalmaz ilyet. Az amiibóhoz és néhány online fiókos funkcióhoz kellenek.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Hogyan emulálják a konzol ARM11 processzorát: a dynarmic gyors rekompilálójával, vagy az Azahar interpreterével. Mindkettőnek ugyanazt az eredményt kell adnia. Az interpreter azért van, hogy kiderüljön, a probléma a rekompilálóból vagy a játékból ered-e.",
 		"setting.cpu_clock": "CPU órajel (%)",

@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Seed-database (seeddb.bin)",
 		"firmware.seeddb_bin.about": "De seeds waarmee sommige eShop-spellen zijn versleuteld.",
 		"setting.aes_keys": "AES-sleutels",
-		"setting.aes_keys.about": "Of het project de AES-sleutels van de console bevat (aes_keys.txt, uit uw eigen console gehaald). Een ontsleuteld spel heeft ze niet nodig, en dit pakket bevat ze niet. Ze zijn nodig om .cia-inhoud te installeren en te draaien, voor amiibo en voor sommige functies met een online account.",
+		"setting.aes_keys.about": "Of het project de AES-sleutels van de console bevat (aes_keys.txt, uit uw eigen console gehaald). Een ontsleuteld spel heeft er geen nodig, en dit pakket bevat er geen. Ze zijn nodig voor amiibo en voor sommige functies met een online account.",
 		"setting.cpu": "Processor",
 		"setting.cpu.about": "Hoe de ARM11-processor van de console wordt geëmuleerd: met de recompiler van dynarmic, die snel is, of met de interpreter van Azahar. Beide moeten hetzelfde resultaat geven. De interpreter is er om te zien of een probleem uit de recompiler komt of uit het spel.",
 		"setting.cpu_clock": "Kloksnelheid van de processor (%)",

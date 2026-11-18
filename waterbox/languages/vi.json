@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Cơ sở dữ liệu seed (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Các seed mà một số game eShop được mã hóa bằng.",
 		"setting.aes_keys": "Khóa AES",
-		"setting.aes_keys.about": "Dự án có kèm các khóa AES của máy console (aes_keys.txt, trích từ chính máy console của bạn) hay không. Game đã giải mã không cần gì, và gói này không kèm khóa nào. Chúng cần để cài và chạy nội dung .cia, cho amiibo và cho một số tính năng tài khoản trực tuyến.",
+		"setting.aes_keys.about": "Dự án có kèm khóa AES của máy hay không (aes_keys.txt, trích từ chính máy của bạn). Trò chơi đã giải mã không cần khóa nào, và gói này không kèm khóa nào. Khóa cần cho amiibo và một số tính năng tài khoản trực tuyến.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Bộ xử lý ARM11 của máy console được mô phỏng như thế nào: với bộ biên dịch dynarmic, nhanh, hoặc với interpreter của Azahar. Cả hai đều nhằm cho cùng kết quả. Interpreter có để tìm xem một vấn đề đến từ bộ biên dịch hay từ game.",
 		"setting.cpu_clock": "Tốc độ CPU (%)",

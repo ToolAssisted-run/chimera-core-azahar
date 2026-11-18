@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "種子資料庫（seeddb.bin）",
 		"firmware.seeddb_bin.about": "部分 eShop 遊戲加密所用的種子。",
 		"setting.aes_keys": "AES 金鑰",
-		"setting.aes_keys.about": "專案是否包含主機的 AES 金鑰（aes_keys.txt，取自你自己的主機）。已解密的遊戲不需要它們，且此套件不包含它們。安裝與執行 .cia 內容、amiibo，以及部分線上帳號功能時需要它們。",
+		"setting.aes_keys.about": "專案是否包含主機的 AES 金鑰（aes_keys.txt，從你自己的主機傾印而來）。已解密的遊戲不需要它們，本套件也不包含它們。amiibo 以及某些連線帳號功能需要它們。",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "主機的 ARM11 處理器如何模擬：使用 dynarmic 的重新編譯器（速度快），或 Azahar 的直譯器。兩者都應得到相同的結果。直譯器的用途是判斷問題來自重新編譯器還是遊戲本身。",
 		"setting.cpu_clock": "CPU 時脈（%）",

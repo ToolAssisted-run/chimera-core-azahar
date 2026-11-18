@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Seed-Datenbank (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Die Seeds, mit denen manche eShop-Spiele verschlüsselt sind.",
 		"setting.aes_keys": "AES-Schlüssel",
-		"setting.aes_keys.about": "Ob das Projekt die AES-Schlüssel der Konsole enthält (aes_keys.txt, von Ihrer eigenen Konsole abgezogen). Ein entschlüsseltes Spiel braucht keine, und dieses Paket enthält keine. Sie werden gebraucht, um Inhalte im .cia-Format zu installieren und auszuführen, für Amiibo und für manche Funktionen mit Online-Konto.",
+		"setting.aes_keys.about": "Ob das Projekt die AES-Schlüssel der Konsole enthält (aes_keys.txt, von Ihrer eigenen Konsole abgezogen). Ein entschlüsseltes Spiel braucht keine, und dieses Paket enthält keine. Sie werden für Amiibo und für manche Funktionen mit Online-Konto gebraucht.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Wie der ARM11-Prozessor der Konsole nachgebildet wird: mit dem schnellen Recompiler von dynarmic oder mit dem Interpreter von Azahar. Beide sollen dasselbe Ergebnis liefern. Der Interpreter dient dazu herauszufinden, ob ein Problem vom Recompiler oder vom Spiel kommt.",
 		"setting.cpu_clock": "CPU-Takt (%)",

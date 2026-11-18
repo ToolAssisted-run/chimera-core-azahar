@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Baza ziaren (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Ziarna, którymi szyfrowane są niektóre gry z eShop.",
 		"setting.aes_keys": "Klucze AES",
-		"setting.aes_keys.about": "Czy projekt zawiera klucze AES konsoli (aes_keys.txt, zgrane z twojej własnej konsoli). Odszyfrowana gra nie potrzebuje ich, a ten pakiet żadnych nie zawiera. Są potrzebne do instalowania i uruchamiania treści .cia, do amiibo i do niektórych funkcji konta online.",
+		"setting.aes_keys.about": "Czy projekt zawiera klucze AES konsoli (aes_keys.txt, zrzucone z własnej konsoli). Odszyfrowana gra ich nie potrzebuje, a ten pakiet ich nie zawiera. Są potrzebne do amiibo i do niektórych funkcji konta online.",
 		"setting.cpu": "Procesor",
 		"setting.cpu.about": "Jak emulowany jest procesor ARM11 konsoli: z rekompilatorem dynarmic, który jest szybki, albo z interpreterem Azahar. Oba mają dawać ten sam wynik. Interpreter służy do sprawdzenia, czy problem pochodzi z rekompilatora, czy z gry.",
 		"setting.cpu_clock": "Zegar CPU (%)",

@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Databáze semen (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Semena, kterými jsou šifrovány některé hry z eShopu.",
 		"setting.aes_keys": "Klíče AES",
-		"setting.aes_keys.about": "Zda projekt obsahuje klíče AES konzole (aes_keys.txt, vypsané z vaší vlastní konzole). Dešifrovaná hra žádné nepotřebuje a tento balíček žádné neobsahuje. Potřebují se k instalaci a spuštění obsahu .cia, pro amiibo a pro některé funkce online účtu.",
+		"setting.aes_keys.about": "Zda projekt obsahuje klíče AES konzole (aes_keys.txt, získané z vaší vlastní konzole). Dešifrovaná hra žádné nepotřebuje a tento balíček žádné neobsahuje. Jsou potřeba pro amiibo a pro některé funkce online účtu.",
 		"setting.cpu": "Procesor",
 		"setting.cpu.about": "Jak se emuluje procesor ARM11 konzole: s rekompilátorem dynarmic, který je rychlý, nebo s interpreterem Azahar. Oba mají dát stejný výsledek. Interpreter tu je, aby se zjistilo, zda problém pochází z rekompilátoru, nebo z hry.",
 		"setting.cpu_clock": "Takt CPU (%)",

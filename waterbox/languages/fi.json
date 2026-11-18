@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Siementietokanta (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Siemenet, joilla jotkin eShop-pelit on salattu.",
 		"setting.aes_keys": "AES-avaimet",
-		"setting.aes_keys.about": "Sisältääkö projekti konsolin AES-avaimet (aes_keys.txt, purettuna omasta konsolistasi). Purettu peli ei tarvitse niitä, eikä tämä paketti sisällä niitä. Niitä tarvitaan .cia-sisällön asentamiseen ja ajamiseen, amiibo-hahmoihin ja joihinkin verkkotilin ominaisuuksiin.",
+		"setting.aes_keys.about": "Sisältääkö projekti konsolin AES-avaimet (aes_keys.txt, otettu omasta konsolistasi). Salaamaton peli ei tarvitse niitä, eikä tämä paketti sisällä niitä. Niitä tarvitaan amiiboihin ja joihinkin verkkotilin toimintoihin.",
 		"setting.cpu": "Suoritin",
 		"setting.cpu.about": "Miten konsolin ARM11-suoritin emuloidaan: dynarmic-kirjaston nopealla kääntäjällä vai Azahar-emulaattorin tulkilla. Molempien on tarkoitus antaa sama tulos. Tulkki on olemassa, jotta voi selvittää, johtuuko ongelma kääntäjästä vai pelistä.",
 		"setting.cpu_clock": "CPU-kello (%)",

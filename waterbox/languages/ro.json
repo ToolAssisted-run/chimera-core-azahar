@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Baza de seed-uri (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Seed-urile cu care sunt criptate unele jocuri din eShop.",
 		"setting.aes_keys": "Chei AES",
-		"setting.aes_keys.about": "Dacă proiectul include cheile AES ale consolei (aes_keys.txt, extrase de pe propria dumneavoastră consolă). Un joc decriptat nu are nevoie de ele, iar acest pachet nu include niciuna. Sunt necesare ca să instalați și să rulați conținut .cia, pentru amiibo și pentru unele funcții cu cont online.",
+		"setting.aes_keys.about": "Dacă proiectul include cheile AES ale consolei (aes_keys.txt, extrase din propria consolă). Un joc decriptat nu are nevoie de niciuna, iar acest pachet nu include niciuna. Sunt necesare pentru amiibo și pentru unele funcții cu cont online.",
 		"setting.cpu": "Procesor",
 		"setting.cpu.about": "Cum este emulat procesorul ARM11 al consolei: cu recompilatorul dynarmic, care este rapid, sau cu interpretorul Azahar. Ambele sunt menite să dea același rezultat. Interpretorul există ca să afle dacă o problemă vine din recompilator sau din joc.",
 		"setting.cpu_clock": "Ceas CPU (%)",

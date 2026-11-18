@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "种子数据库（seeddb.bin）",
 		"firmware.seeddb_bin.about": "某些 eShop 游戏加密所用的种子。",
 		"setting.aes_keys": "AES 密钥",
-		"setting.aes_keys.about": "项目是否包含主机的 AES 密钥（aes_keys.txt，从你自己的主机转储而来）。已解密的游戏不需要它们，本软件包也不包含它们。安装和运行 .cia 内容、amiibo 以及某些联机账户功能需要它们。",
+		"setting.aes_keys.about": "项目是否包含主机的 AES 密钥（aes_keys.txt，从你自己的主机转储而来）。已解密的游戏不需要它们，本软件包也不包含它们。amiibo 以及某些联机账户功能需要它们。",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "主机的 ARM11 处理器如何被模拟：使用 dynarmic 的重编译器（快），或使用 Azahar 的解释器。两者都应给出相同的结果。解释器用于判断问题来自重编译器还是来自游戏。",
 		"setting.cpu_clock": "CPU 时钟（%）",

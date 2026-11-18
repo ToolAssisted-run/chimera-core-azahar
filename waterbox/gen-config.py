@@ -313,8 +313,7 @@ config = {
             "description": text("setting.aes_keys.about", "Whether the project includes the console's AES keys "
                 "(aes_keys.txt, dumped from your own console). A decrypted "
                 "game needs none, and this package includes none. They are "
-                "needed to install and run .cia content, for amiibo and for "
-                "some online-account features."),
+                "needed for amiibo and for some online-account features."),
         },
         {
             "name": "seeddb",

@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Base de dades de llavors (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Les llavors amb què es xifren alguns jocs de la eShop.",
 		"setting.aes_keys": "Claus AES",
-		"setting.aes_keys.about": "Si el projecte inclou les claus AES de la consola (aes_keys.txt, extretes de la vostra pròpia consola). Un joc desxifrat no en necessita cap, i aquest paquet no n'inclou cap. Són necessàries per instal·lar i executar contingut .cia, per a amiibo i per a algunes funcions de compte en línia.",
+		"setting.aes_keys.about": "Indica si el projecte inclou les claus AES de la consola (aes_keys.txt, extretes de la vostra pròpia consola). Un joc desxifrat no en necessita cap, i aquest paquet no n'inclou cap. Són necessàries per als amiibo i per a algunes funcions de compte en línia.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Com s'emula el processador ARM11 de la consola: amb el recompilador de dynarmic, que és ràpid, o amb l'intèrpret d'Azahar. Tots dos han de donar el mateix resultat. L'intèrpret hi és per saber si un problema ve del recompilador o del joc.",
 		"setting.cpu_clock": "Velocitat de la CPU (%)",

@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Frødatabase (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Frøene noen eShop-spill er kryptert med.",
 		"setting.aes_keys": "AES-nøkler",
-		"setting.aes_keys.about": "Om prosjektet inkluderer konsollens AES-nøkler (aes_keys.txt, hentet fra din egen konsoll). Et dekryptert spill trenger ingen, og denne pakken inkluderer ingen. De trengs for å installere og kjøre .cia-innhold, for amiibo og for noen funksjoner med nettkonto.",
+		"setting.aes_keys.about": "Om prosjektet inneholder konsollens AES-nøkler (aes_keys.txt, hentet fra din egen konsoll). Et dekryptert spill trenger ingen, og denne pakken inneholder ingen. De trengs for amiibo og for noen funksjoner med nettkonto.",
 		"setting.cpu": "Prosessor",
 		"setting.cpu.about": "Hvordan konsollens ARM11-prosessor emuleres: med rekompilatoren fra dynarmic, som er rask, eller med tolkeren i Azahar. Begge skal gi samme resultat. Tolkeren finnes for å finne ut om et problem kommer fra rekompilatoren eller fra spillet.",
 		"setting.cpu_clock": "CPU-klokke (%)",

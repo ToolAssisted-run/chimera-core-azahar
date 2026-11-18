@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "Basis data seed (seeddb.bin)",
 		"firmware.seeddb_bin.about": "Seed yang digunakan untuk mengenkripsi sebagian game eShop.",
 		"setting.aes_keys": "Kunci AES",
-		"setting.aes_keys.about": "Apakah proyek menyertakan kunci AES konsol (aes_keys.txt, diambil dari konsol Anda sendiri). Game yang sudah didekripsi tidak membutuhkannya, dan paket ini tidak menyertakannya. Kunci dibutuhkan untuk memasang dan menjalankan konten .cia, untuk amiibo, dan untuk sebagian fitur akun daring.",
+		"setting.aes_keys.about": "Apakah proyek menyertakan kunci AES konsol (aes_keys.txt, diambil dari konsol Anda sendiri). Game yang sudah didekripsi tidak memerlukannya, dan paket ini tidak menyertakannya. Kunci diperlukan untuk amiibo dan beberapa fitur akun online.",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "Cara prosesor ARM11 konsol diemulasi: dengan recompiler dynarmic, yang cepat, atau dengan interpreter Azahar. Keduanya dimaksudkan memberi hasil yang sama. Interpreter ada untuk mengetahui apakah sebuah masalah berasal dari recompiler atau dari game.",
 		"setting.cpu_clock": "Clock CPU (%)",

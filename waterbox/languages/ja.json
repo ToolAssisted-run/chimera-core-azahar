@@ -40,7 +40,7 @@
 		"firmware.seeddb_bin": "シードデータベース(seeddb.bin)",
 		"firmware.seeddb_bin.about": "一部の eShop のゲームが暗号化に使うシードです。",
 		"setting.aes_keys": "AES キー",
-		"setting.aes_keys.about": "プロジェクトに、コンソールの AES キー(aes_keys.txt、ご自分のコンソールからダンプしたもの)を含めるかどうかです。復号されたゲームには不要で、このパッケージにはどれも含まれていません。.cia のコンテンツのインストールと実行、amiibo、一部のオンラインアカウントの機能に必要です。",
+		"setting.aes_keys.about": "プロジェクトに、コンソールの AES キー(aes_keys.txt、ご自分のコンソールからダンプしたもの)を含めるかどうかです。復号されたゲームには不要で、このパッケージにはどれも含まれていません。amiibo と、一部のオンラインアカウントの機能に必要です。",
 		"setting.cpu": "CPU",
 		"setting.cpu.about": "コンソールの ARM11 プロセッサをどうエミュレートするかです。dynarmic のリコンパイラ(高速)か、Azahar のインタープリターです。どちらも同じ結果になるよう意図されています。インタープリターは、問題がリコンパイラから来るのか、ゲームから来るのかを調べるためにあります。",
 		"setting.cpu_clock": "CPU クロック(%)",
